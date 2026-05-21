@@ -1,0 +1,2113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>ElBussTransTherm – Field Measurement Platform</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#EEF1F6;--sb:#1A2332;--sb-h:#243044;--kth:#004B87;--kth2:#0065B3;
+  --card:#fff;--bdr:#DDE3EC;--txt:#1E293B;--mu:#64748B;--mu2:#94A3B8;
+  --live:#22C55E;--warn:#F59E0B;--err:#EF4444;--info:#3B82F6;--pur:#8B5CF6;
+  --teal:#0891B2;--ob:#FEF2F2;--oc:#B91C1C;--ab:#EFF6FF;--ac:#1D4ED8;
+  --cb:#F0FDF4;--cc:#166534;
+}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--txt);
+  font-size:12px;height:100vh;overflow:hidden;display:flex;flex-direction:column}
+
+/* HEADER */
+.hdr{display:flex;align-items:center;gap:10px;padding:0 14px;height:52px;
+  background:var(--kth);color:#fff;flex-shrink:0;z-index:50;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.logo-wrap{display:flex;align-items:center;gap:8px}
+.logo-circle{display:none}
+.logo-txt .t1{font-size:13px;font-weight:700;letter-spacing:.3px}
+.logo-txt .t2{font-size:10px;color:#90B8D8}
+.hsep{width:1px;height:28px;background:rgba(255,255,255,.2);margin:0 2px}
+.hcenter{display:flex;align-items:center;gap:8px;flex:1;justify-content:center}
+.badge-live{display:flex;align-items:center;gap:5px;background:#166534;border:1px solid var(--live);
+  border-radius:4px;padding:3px 10px;font-size:11px;font-weight:600}
+.ldot{width:7px;height:7px;border-radius:50%;background:var(--live);
+  animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.75)}}
+.hpill{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);
+  border-radius:4px;padding:3px 9px;font-size:11px;white-space:nowrap}
+.hpill span{color:#90B8D8;margin-right:3px}
+.hright{display:flex;align-items:center;gap:6px;margin-left:auto}
+.hbtn{width:30px;height:30px;background:rgba(255,255,255,.12);border:none;border-radius:6px;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.15s;
+  position:relative;color:#fff}
+.hbtn:hover{background:rgba(255,255,255,.22)}
+.hbtn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8}
+.nbadge::after{content:attr(data-n);position:absolute;top:-4px;right:-4px;min-width:14px;height:14px;
+  background:var(--err);border-radius:7px;font-size:8px;color:#fff;display:flex;
+  align-items:center;justify-content:center;padding:0 2px}
+.htime .t1{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
+.htime .t2{font-size:9.5px;color:#90B8D8;text-align:right}
+
+/* LAYOUT */
+.layout{display:flex;flex:1;overflow:hidden}
+
+/* SIDEBAR */
+.sb{width:190px;background:var(--sb);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
+.sb::-webkit-scrollbar{width:3px}
+.sb::-webkit-scrollbar-thumb{background:#334155}
+.nitem{display:flex;align-items:center;gap:9px;padding:7px 14px;cursor:pointer;
+  color:#94A3B8;font-size:12px;transition:.15s}
+.nitem:hover{background:var(--sb-h);color:#CBD5E1}
+.nitem.active{background:var(--kth);color:#fff}
+.nitem svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;flex-shrink:0}
+.ssec{margin-top:12px;padding:0 14px;font-size:9.5px;font-weight:600;color:#475569;
+  letter-spacing:.8px;text-transform:uppercase;margin-bottom:5px}
+.lrow{display:flex;align-items:center;justify-content:space-between;padding:5px 14px;cursor:pointer}
+.llbl{display:flex;align-items:center;gap:7px;color:#94A3B8;font-size:11.5px}
+.ldotc{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.tog{width:28px;height:16px;border-radius:8px;position:relative;cursor:pointer;
+  transition:.2s;flex-shrink:0}
+.tog::after{content:'';position:absolute;top:2px;width:12px;height:12px;
+  background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.ton{background:var(--kth)}.ton::after{left:14px}
+.ton2{background:var(--info)}.ton2::after{left:14px}
+.ton3{background:var(--warn)}.ton3::after{left:14px}
+.ton4{background:var(--live)}.ton4::after{left:14px}
+.toff{background:#334155}.toff::after{left:2px}
+.sysrow{display:flex;align-items:center;justify-content:space-between;
+  padding:3px 14px;color:#94A3B8;font-size:11px}
+.sysval{font-weight:600;color:var(--live)}
+.sysall{display:flex;align-items:center;gap:5px;padding:5px 14px;font-size:11px;color:#94A3B8}
+.sadog{width:7px;height:7px;border-radius:50%;background:var(--live)}
+.sbver{margin-top:auto;padding:8px 14px;font-size:9.5px;color:#475569}
+
+/* MAIN */
+.main{flex:1;overflow-y:auto;padding:9px 9px 5px;display:flex;flex-direction:column;gap:7px}
+.main::-webkit-scrollbar{width:5px}
+.main::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:3px}
+
+/* GRID */
+.mg{display:grid;grid-template-columns:55fr 21fr 24fr;grid-template-rows:auto auto;
+  gap:7px;flex:1;min-height:0}
+
+/* CARDS */
+.card{background:var(--card);border-radius:8px;border:1px solid var(--bdr);
+  box-shadow:0 1px 4px rgba(0,0,0,.06);display:flex;flex-direction:column;overflow:hidden}
+.ch{display:flex;align-items:center;justify-content:space-between;
+  padding:6px 12px;border-bottom:1px solid var(--bdr);flex-shrink:0}
+.ch h3{font-size:11px;font-weight:700;color:var(--txt);letter-spacing:.3px;text-transform:uppercase}
+.chr{display:flex;align-items:center;gap:6px}
+.vtab{display:flex;gap:4px}
+.vt{font-size:10px;padding:3px 9px;border-radius:4px;cursor:pointer;
+  border:1px solid var(--bdr);background:#F8FAFC;color:var(--mu);transition:.15s}
+.vt.active{background:var(--kth);color:#fff;border-color:var(--kth)}
+
+/* BUS OVERVIEW */
+.bus-ov{grid-column:1;grid-row:1}
+.bv-wrap{padding:7px 12px}
+.blbl{font-size:9px;color:var(--mu);margin-bottom:3px;font-weight:600;
+  letter-spacing:.5px;text-transform:uppercase}
+.brel{position:relative;padding-right:30px}
+.scbar{position:absolute;right:0;top:0;bottom:0;width:28px;display:flex;
+  flex-direction:column;align-items:center;gap:1px}
+.scbar-title{font-size:8px;color:var(--mu);margin-bottom:2px;white-space:nowrap}
+.scbar-inner{display:flex;gap:2px;flex:1}
+.scbar-grad{width:9px;border-radius:2px;
+  background:linear-gradient(to bottom,#B71C1C,#E53935,#FB8C00,#FDD835,#43A047,#0097A7,#1565C0)}
+.scbar-ticks{display:flex;flex-direction:column;justify-content:space-between;height:100%}
+.scbar-ticks span{font-size:8px;color:var(--mu)}
+.sl-row{display:flex;gap:9px;padding:4px 0 0;flex-wrap:wrap}
+.sli{display:flex;align-items:center;gap:4px;font-size:9.5px;color:var(--mu)}
+.sld{width:11px;height:11px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:7px;font-weight:700;color:#fff;flex-shrink:0}
+.svp{background:#F8FAFC;border:1.5px dashed #CBD5E1;border-radius:6px;
+  display:flex;align-items:center;justify-content:center;color:var(--mu2);
+  font-size:11px;font-style:italic;text-align:center;line-height:1.5}
+
+/* KPIs */
+.ki{grid-column:2;grid-row:1;display:flex;flex-direction:column}
+.kgrid{display:flex;flex-direction:column;gap:5px;padding:6px 9px;overflow-y:auto;flex:1}
+.kgrid::-webkit-scrollbar{width:3px}
+.kgrid::-webkit-scrollbar-thumb{background:#E2E8F0;border-radius:2px}
+.kc{background:#F8FAFC;border:1px solid var(--bdr);border-radius:6px;padding:6px 8px;flex-shrink:0}
+.klbl{font-size:9px;color:var(--mu);margin-bottom:1px;white-space:nowrap}
+.kv{font-size:19px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+.ku{font-size:11px;font-weight:400;color:var(--mu);margin-left:1px}
+.kd{display:flex;align-items:center;gap:2px;font-size:9.5px;margin-top:1px}
+.dup{color:var(--err)}.ddn{color:var(--live)}.dne{color:var(--mu)}
+.ksp{grid-column:1/-1;background:linear-gradient(135deg,#EEF4FB,#F8FAFC);border:1px solid #C7D8EE;padding:6px 9px}
+.khvac{font-size:15px;font-weight:700;color:var(--kth2)}
+.occbar{margin-top:3px;height:5px;background:#E2E8F0;border-radius:3px;overflow:hidden}
+.occfill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--kth2),var(--teal));transition:width .5s}
+
+/* EVENTS */
+.aev{grid-column:3;grid-row:1;display:flex;flex-direction:column;max-height:320px}
+.evlist{flex:1;overflow-y:auto;padding:5px 9px;display:flex;flex-direction:column;gap:4px}
+.evlist::-webkit-scrollbar{width:3px}
+.evlist::-webkit-scrollbar-thumb{background:#E2E8F0;border-radius:2px}
+.evitem{background:#F8FAFC;border:1px solid var(--bdr);border-radius:6px;
+  padding:6px 8px;display:flex;align-items:flex-start;gap:6px}
+.evitem.eo{border-left:3px solid var(--err)}
+.evitem.ea{border-left:3px solid var(--warn)}
+.evitem.ec{border-left:3px solid var(--live)}
+.evbadge{width:17px;height:17px;border-radius:50%;flex-shrink:0;display:flex;
+  align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#fff;margin-top:1px}
+.bA{background:var(--info)}.bB{background:var(--warn)}.bC{background:var(--live)}.bD{background:var(--pur)}
+.evcon{flex:1;min-width:0}
+.evname{font-size:10.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.evsince{font-size:9px;color:var(--mu);margin-top:1px}
+.evr{text-align:right;flex-shrink:0}
+.evst{font-size:8.5px;font-weight:700;padding:2px 5px;border-radius:3px}
+.so{background:var(--ob);color:var(--oc)}.sa{background:var(--ab);color:var(--ac)}.sc{background:var(--cb);color:var(--cc)}
+.evdur{font-size:9px;color:var(--mu);margin-top:2px;font-variant-numeric:tabular-nums}
+.evsum{padding:7px 9px;border-top:1px solid var(--bdr);display:flex;gap:5px;flex-shrink:0}
+.sbox{flex:1;text-align:center;border-radius:5px;padding:4px}
+.sbo{background:var(--ob)}.sbc{background:var(--cb)}.sba{background:var(--ab)}
+.sv{font-size:17px;font-weight:700}
+.sl{font-size:8.5px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-top:1px}
+.sbo .sv{color:var(--err)}.sbo .sl{color:var(--oc)}
+.sbc .sv{color:var(--live)}.sbc .sl{color:var(--cc)}
+.sba .sv{color:var(--info)}.sba .sl{color:var(--ac)}
+
+/* TIME SERIES */
+.ts{grid-column:1;grid-row:2}
+.tstb{display:flex;align-items:center;gap:4px;flex-wrap:wrap;padding:4px 0 5px}
+.tsbtn{font-size:10px;padding:2px 7px;border-radius:4px;cursor:pointer;
+  border:1px solid var(--bdr);background:#F8FAFC;color:var(--mu);transition:.15s;user-select:none}
+.tsbtn.on{color:#fff;border-color:transparent}
+.at{background:#F44336}.mr{background:#FF7043}.rh{background:#2196F3}
+.co{background:#9C27B0}.pm{background:#00BCD4}.so2{background:#8BC34A}
+.oc{background:#1A237E}.ds{background:#607D8B}.hp{background:#FF9800}
+.tszoom{display:flex;align-items:center;gap:3px;margin-left:auto}
+.tszoom button{width:22px;height:22px;border:1px solid var(--bdr);background:#F8FAFC;
+  border-radius:4px;cursor:pointer;font-size:13px;color:var(--mu)}
+.tswin{font-size:10px;color:var(--mu);padding:2px 6px;border:1px solid var(--bdr);
+  background:#F8FAFC;border-radius:4px}
+.cwrap{position:relative;height:175px}
+.dbar-row{display:flex;align-items:center;gap:6px;margin-top:4px;padding-bottom:2px}
+.dbar-lbl{font-size:9px;color:var(--mu);width:48px;flex-shrink:0}
+.dbar-segs{flex:1;height:11px;background:#F1F5F9;border-radius:3px;overflow:hidden;position:relative}
+.dseg{position:absolute;top:0;height:100%;background:#607D8B;border-radius:2px}
+
+/* THERMAL DUMMY */
+.td{grid-column:2/4;grid-row:2;display:flex;flex-direction:column}
+.dtabs{display:flex;border-bottom:1px solid var(--bdr);flex-shrink:0}
+.dtab{flex:1;text-align:center;padding:5px;font-size:11px;cursor:pointer;
+  border-bottom:2px solid transparent;transition:.15s;color:var(--mu)}
+.dtab.active{color:var(--kth);border-bottom-color:var(--kth);font-weight:600}
+.dbody{display:flex;gap:7px;padding:7px 9px;flex:1;overflow:hidden}
+.dfig{width:88px;flex-shrink:0;display:flex;align-items:flex-start;justify-content:center}
+.dtemps{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
+.dtemps::-webkit-scrollbar{width:2px}
+.dtemps::-webkit-scrollbar-thumb{background:#E2E8F0}
+.dtrow{display:flex;align-items:center;justify-content:space-between;
+  padding:2px 0;border-bottom:1px solid #F1F5F9;font-size:10px}
+.dtseg{color:var(--mu);font-size:9.5px}
+.dtval{font-weight:600;font-variant-numeric:tabular-nums}
+.dtdot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-left:3px}
+.dleg{display:flex;gap:8px;padding:3px 9px;border-top:1px solid var(--bdr);flex-shrink:0}
+.dli{display:flex;align-items:center;gap:4px;font-size:9.5px;color:var(--mu)}
+.dld{width:7px;height:7px;border-radius:50%}
+/* Manikin image overlay */
+.manikin-wrap{position:relative;display:inline-block;line-height:0}
+.manikin-wrap img{display:block}
+.m-dot{position:absolute;border-radius:50%;border:2px solid #fff;
+  transform:translate(-50%,-50%);box-shadow:0 1px 5px rgba(0,0,0,.45);
+  pointer-events:none}
+
+/* MAP inside thermal dummy card */
+.loc-wrap{margin:0 9px 9px;border:1px solid var(--bdr);border-radius:6px;overflow:hidden;flex-shrink:0}
+.loc-head{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--mu);padding:5px 9px;background:#F8FAFC;border-bottom:1px solid var(--bdr);
+  display:flex;align-items:center;justify-content:space-between}
+.loc-body{display:grid;grid-template-columns:auto 1fr;gap:0}
+.loc-info{padding:6px 9px}
+.locrow{display:flex;justify-content:space-between;gap:8px;margin-bottom:2px;font-size:10.5px}
+.lockk{color:var(--mu)}.locvv{font-weight:600;font-variant-numeric:tabular-nums}
+#leafletMapRP{isolation:isolate}
+.leaflet-tile-pane{filter:brightness(.98) saturate(.9)}
+.leaflet-control-attribution{font-size:7px!important}
+.bus-marker-icon{background:var(--kth);border-radius:50%;width:22px;height:22px;
+  border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4);display:flex;
+  align-items:center;justify-content:center;font-size:11px}
+
+/* GRAPHS VIEW */
+.gv{display:flex;flex-direction:column;gap:7px;flex:1;min-height:0;overflow-y:auto}
+.gv::-webkit-scrollbar{width:5px}
+.gv::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:3px}
+.gv-row{display:flex;gap:7px;min-height:220px;position:relative}
+.gv-left{flex:55;min-width:0}
+.gv-right{flex:45;min-width:0}
+.gv-half{flex:1;min-width:0}
+/* Expand on hover */
+.gv-zoom{
+  transition:transform .22s cubic-bezier(.34,1.36,.64,1),
+             box-shadow .22s ease;
+  position:relative;z-index:1;cursor:zoom-in;
+}
+.gv-zoom:hover{
+  transform:scale(1.9);
+  z-index:200;
+  box-shadow:0 32px 80px rgba(0,0,0,.35);
+}
+.gv-left.gv-zoom{transform-origin:left center}
+.gv-right.gv-zoom{transform-origin:right center}
+.gv-half:first-child.gv-zoom{transform-origin:left center}
+.gv-half:last-child.gv-zoom{transform-origin:right center}
+.gv-sel{font-size:10px;padding:3px 7px;border:1px solid var(--bdr);border-radius:4px;
+  background:#F8FAFC;color:var(--txt);cursor:pointer;outline:none}
+.gv-canwrap{position:relative;flex:1;min-height:0;padding:4px 10px 8px}
+.gv-canwrap canvas{display:block}
+/* Sankey */
+.sankey-wrap{flex:1;overflow:hidden;padding:4px 10px 8px;display:flex;align-items:center;justify-content:center}
+.sankey-wrap svg{width:100%;height:100%}
+.gv-save{background:#F8FAFC;border:1px solid var(--bdr);border-radius:4px;
+  padding:2px 8px;font-size:10px;cursor:pointer;color:var(--mu);white-space:nowrap;
+  display:flex;align-items:center;gap:3px;transition:.15s}
+.gv-save:hover{background:var(--kth);color:#fff;border-color:var(--kth)}
+
+/* VIEW PANELS */
+.view-panel{display:none;flex:1;flex-direction:column;gap:7px;min-height:0}
+.view-panel.active{display:flex}
+/* MAP VIEW */
+.mv-wrap{display:flex;gap:7px;flex:1;min-height:0}
+.mv-map-card{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
+#fullMap{flex:1;min-height:0;isolation:isolate}
+.mv-side{width:280px;flex-shrink:0;display:flex;flex-direction:column;gap:7px;overflow-y:auto}
+.mv-side::-webkit-scrollbar{width:3px}
+.mv-side::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:3px}
+.loc-card{background:var(--card);border-radius:8px;border:1px solid var(--bdr);
+  box-shadow:0 1px 4px rgba(0,0,0,.06);overflow:hidden}
+.loc-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:8px}
+.loc-item{background:#F8FAFC;border:1px solid var(--bdr);border-radius:6px;padding:6px 9px}
+.loc-k{display:block;font-size:9px;color:var(--mu);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+.loc-v{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--txt)}
+/* WEATHER */
+.wx-now{display:flex;align-items:center;gap:10px;padding:10px 12px;
+  background:linear-gradient(135deg,var(--kth),var(--kth2));color:#fff;border-radius:8px 8px 0 0}
+.wx-icon{font-size:36px;line-height:1}
+.wx-temp{font-size:28px;font-weight:700;line-height:1}
+.wx-desc{font-size:11px;opacity:.85;margin-top:2px}
+.wx-meta{font-size:10px;opacity:.75;margin-top:1px}
+.wx-extra{display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--bdr)}
+.wx-ex{padding:7px 10px;border-right:1px solid var(--bdr);border-bottom:1px solid var(--bdr)}
+.wx-ex:nth-child(2n){border-right:none}
+.wx-ex:last-child,.wx-ex:nth-last-child(2){border-bottom:none}
+.wx-ek{font-size:9px;color:var(--mu);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}
+.wx-ev{font-size:13px;font-weight:600;color:var(--txt)}
+.wx-forecast{padding:8px 10px}
+.wx-fc-title{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--mu);margin-bottom:6px}
+.wx-fc-strip{display:flex;gap:4px;overflow-x:auto;padding-bottom:3px}
+.wx-fc-strip::-webkit-scrollbar{height:2px}
+.wx-fc-strip::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:1px}
+.wx-fc-item{flex-shrink:0;text-align:center;padding:5px 6px;border-radius:6px;
+  background:#F8FAFC;border:1px solid var(--bdr);min-width:44px}
+.wx-fc-hr{font-size:9px;color:var(--mu);margin-bottom:3px}
+.wx-fc-ic{font-size:16px;line-height:1.2}
+.wx-fc-t{font-size:11px;font-weight:600;color:var(--txt)}
+.wx-fc-pp{font-size:9px;color:var(--info);margin-top:1px}
+.wx-loading{padding:20px;text-align:center;color:var(--mu);font-size:11px}
+/* DUMMY FULL VIEW */
+.dv-wrap{display:flex;gap:12px;flex:1;min-height:0;padding:10px 14px}
+.dv-fig-col{width:160px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:8px}
+.dv-fig-col svg{width:140px;height:auto}
+.dv-legend{display:flex;gap:12px;justify-content:center}
+.dv-li{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--mu)}
+.dv-ld{width:9px;height:9px;border-radius:50%}
+.dv-data-col{flex:1;min-width:0;overflow-y:auto;display:flex;flex-direction:column;gap:6px}
+.dv-data-col::-webkit-scrollbar{width:3px}
+.dv-data-col::-webkit-scrollbar-thumb{background:#E2E8F0;border-radius:2px}
+.dv-section-title{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;
+  color:var(--mu);padding-bottom:4px;border-bottom:1px solid var(--bdr);margin-bottom:4px}
+.dv-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.dv-seg-card{background:#F8FAFC;border:1px solid var(--bdr);border-radius:6px;padding:5px 8px;
+  display:flex;align-items:center;gap:6px}
+.dv-sc-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.dv-sc-info{flex:1;min-width:0}
+.dv-sc-name{font-size:9.5px;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dv-sc-val{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--txt);line-height:1.1}
+.dv-sc-unit{font-size:9px;color:var(--mu)}
+.dv-pmv{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:4px}
+.dv-pmv-card{background:#F8FAFC;border:1px solid var(--bdr);border-radius:6px;padding:8px;text-align:center}
+.dv-pmv-lbl{font-size:9px;color:var(--mu);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.dv-pmv-val{font-size:20px;font-weight:700;color:var(--kth)}
+.dv-pmv-sub{font-size:9px;color:var(--mu);margin-top:2px}
+
+/* SNAPSHOT */
+.snap{background:var(--card);border:1px solid var(--bdr);border-radius:8px;
+  padding:5px 12px;display:flex;align-items:center;gap:0;flex-shrink:0;
+  box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.snaplbl{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--mu);white-space:nowrap;margin-right:10px}
+.snapitems{display:flex;flex:1;gap:0;overflow:hidden}
+.snapitem{display:flex;align-items:center;gap:5px;flex:1;min-width:0;
+  padding:1px 8px;border-right:1px solid var(--bdr)}
+.snapitem:last-child{border-right:none}
+.sico{width:18px;height:18px;border-radius:4px;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0}
+.sico svg{width:10px;height:10px;fill:none;stroke:#fff;stroke-width:2}
+.sinfo .sk{font-size:8.5px;color:var(--mu)}
+.sinfo .sv2{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.2}
+.sinfo .su{font-size:9px;color:var(--mu);margin-left:1px}
+.snapver{font-size:9px;color:var(--mu);white-space:nowrap;margin-left:8px}
+
+/* ════════════════════════════════════
+   REPORTS PANEL (slide-in from right)
+   ════════════════════════════════════ */
+.rp-overlay{position:fixed;inset:0;background:rgba(0,0,0,0);pointer-events:none;
+  transition:background .3s;z-index:2000}
+.rp-overlay.open{background:rgba(0,0,0,.35);pointer-events:auto}
+.rp{position:fixed;right:0;top:0;bottom:0;width:400px;background:#fff;
+  border-left:1px solid var(--bdr);box-shadow:-5px 0 24px rgba(0,0,0,.18);
+  transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+  z-index:2001;display:flex;flex-direction:column}
+.rp.open{transform:translateX(0)}
+.rp-hdr{padding:0 16px;height:52px;background:var(--kth);color:#fff;
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.rp-hdr h2{font-size:14px;font-weight:700}
+.rp-close{background:rgba(255,255,255,.15);border:none;width:28px;height:28px;
+  border-radius:6px;cursor:pointer;color:#fff;font-size:16px;display:flex;
+  align-items:center;justify-content:center}
+.rp-close:hover{background:rgba(255,255,255,.28)}
+.rp-body{flex:1;overflow-y:auto;padding:14px}
+.rp-body::-webkit-scrollbar{width:4px}
+.rp-body::-webkit-scrollbar-thumb{background:#E2E8F0;border-radius:2px}
+.rp-sec{margin-bottom:16px}
+.rp-sec-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;
+  color:var(--mu);margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--bdr)}
+.trip-card{background:linear-gradient(135deg,var(--kth),var(--kth2));color:#fff;
+  border-radius:8px;padding:12px 14px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tc-item .tck{font-size:9px;color:rgba(255,255,255,.7);margin-bottom:2px}
+.tc-item .tcv{font-size:13px;font-weight:700}
+.stats-table{width:100%;border-collapse:collapse;font-size:11px}
+.stats-table th{text-align:left;font-size:9px;color:var(--mu);font-weight:600;
+  text-transform:uppercase;letter-spacing:.4px;padding:4px 6px;
+  background:#F8FAFC;border-bottom:1px solid var(--bdr)}
+.stats-table th:not(:first-child){text-align:center}
+.stats-table td{padding:5px 6px;border-bottom:1px solid #F1F5F9;font-variant-numeric:tabular-nums}
+.stats-table td:not(:first-child){text-align:center}
+.stats-table tr:hover td{background:#F8FAFC}
+.stats-table .met{font-weight:600;color:var(--txt)}
+.stats-table .minv{color:var(--info)}.stats-table .maxv{color:var(--err)}.stats-table .avgv{color:var(--live)}
+.dl-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dl-btn{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:8px;
+  border:1.5px solid var(--bdr);background:#F8FAFC;cursor:pointer;transition:.15s;
+  text-decoration:none;color:var(--txt)}
+.dl-btn:hover{background:#EEF4FB;border-color:var(--info)}
+.dl-btn.primary{background:var(--kth);border-color:var(--kth);color:#fff;grid-column:1/-1}
+.dl-btn.primary:hover{background:var(--kth2)}
+.dl-icon{width:32px;height:32px;border-radius:6px;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0;font-size:16px}
+.dl-info .dln{font-size:11.5px;font-weight:600}
+.dl-info .dls{font-size:9.5px;color:var(--mu)}
+.dl-btn.primary .dls{color:rgba(255,255,255,.7)}
+/* RP location */
+.rp-locgrid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.rp-locitem{background:#F8FAFC;border:1px solid var(--bdr);border-radius:6px;padding:6px 9px}
+.rp-lk{display:block;font-size:9px;color:var(--mu);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+.rp-lv{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--txt)}
+/* RP thermal dummy */
+.rp-td-wrap{display:flex;flex-direction:column;gap:6px}
+.rp-td-list{display:grid;grid-template-columns:1fr 1fr;gap:3px}
+.rp-tdrow{display:flex;align-items:center;justify-content:space-between;gap:4px;padding:4px 7px;
+  background:#F8FAFC;border:1px solid var(--bdr);border-radius:4px}
+.rp-tdseg{font-size:10px;color:var(--txt);flex:1}
+.rp-tdval{font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--txt)}
+.rp-tddot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.rp-td-leg{display:flex;gap:12px;padding:2px 0}
+.rp-tdi{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--mu)}
+.rp-tdd{width:9px;height:9px;border-radius:50%}
+.prev-trips{display:flex;flex-direction:column;gap:5px}
+.pt-item{display:flex;align-items:center;justify-content:space-between;
+  padding:8px 10px;background:#F8FAFC;border:1px solid var(--bdr);
+  border-radius:6px;cursor:pointer;transition:.15s}
+.pt-item:hover{background:#EEF4FB;border-color:var(--info)}
+.pt-info .pt-id{font-size:11px;font-weight:600}
+.pt-info .pt-meta{font-size:9.5px;color:var(--mu);margin-top:1px}
+.pt-dl{background:var(--kth);color:#fff;border:none;border-radius:4px;
+  padding:3px 8px;font-size:9.5px;cursor:pointer;transition:.15s}
+.pt-dl:hover{background:var(--kth2)}
+
+/* ════════════════════════════════════
+   DATA EXPLORER MODAL
+   ════════════════════════════════════ */
+.de-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);
+  display:none;align-items:center;justify-content:center;z-index:2100}
+.de-overlay.open{display:flex}
+.de-modal{background:#fff;border-radius:12px;width:90%;max-width:900px;
+  max-height:80vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.de-hdr{padding:0 18px;height:50px;background:var(--kth);border-radius:12px 12px 0 0;
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.de-hdr h2{color:#fff;font-size:14px;font-weight:700}
+.de-close{background:rgba(255,255,255,.15);border:none;width:28px;height:28px;
+  border-radius:6px;cursor:pointer;color:#fff;font-size:16px}
+.de-close:hover{background:rgba(255,255,255,.28)}
+.de-toolbar{display:flex;align-items:center;gap:8px;padding:10px 18px;border-bottom:1px solid var(--bdr)}
+.de-toolbar input{flex:1;border:1px solid var(--bdr);border-radius:6px;
+  padding:5px 10px;font-size:11px;outline:none}
+.de-toolbar input:focus{border-color:var(--kth)}
+.de-count{font-size:11px;color:var(--mu);white-space:nowrap}
+.de-table-wrap{flex:1;overflow-y:auto;padding:0 18px 14px}
+.de-table-wrap::-webkit-scrollbar{width:5px}
+.de-table-wrap::-webkit-scrollbar-thumb{background:#E2E8F0;border-radius:3px}
+.de-table{width:100%;border-collapse:collapse;font-size:11px}
+.de-table th{position:sticky;top:0;background:#F8FAFC;border-bottom:2px solid var(--bdr);
+  padding:6px 8px;text-align:left;font-size:9px;font-weight:700;color:var(--mu);
+  text-transform:uppercase;letter-spacing:.4px;cursor:pointer;white-space:nowrap;z-index:1}
+.de-table th:hover{background:#EEF4FB;color:var(--kth)}
+.de-table th .sort-arrow{margin-left:3px;color:var(--mu2)}
+.de-table td{padding:5px 8px;border-bottom:1px solid #F5F7FA;font-variant-numeric:tabular-nums;white-space:nowrap}
+.de-table tr:hover td{background:#F8FAFC}
+.de-table .co2-hi{color:var(--err);font-weight:600}
+.de-table .temp-hi{color:var(--warn);font-weight:600}
+.de-footer{padding:8px 18px;border-top:1px solid var(--bdr);display:flex;
+  align-items:center;justify-content:space-between;flex-shrink:0}
+.de-footer .de-pg{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--mu)}
+.de-footer button{padding:4px 12px;border-radius:5px;border:1px solid var(--bdr);
+  background:#F8FAFC;font-size:11px;cursor:pointer}
+.de-footer button:hover{background:#EEF4FB}
+.de-export{background:var(--kth);color:#fff;border-color:var(--kth)!important}
+.de-export:hover{background:var(--kth2)!important}
+
+/* NOTIFICATION PANEL */
+.notif-panel{position:fixed;right:56px;top:52px;width:300px;background:#fff;
+  border:1px solid var(--bdr);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.15);
+  z-index:2200;display:none;overflow:hidden}
+.notif-panel.open{display:block}
+.np-hdr{padding:10px 12px;background:#F8FAFC;border-bottom:1px solid var(--bdr);
+  font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--mu);
+  display:flex;align-items:center;justify-content:space-between}
+.np-list{max-height:260px;overflow-y:auto}
+.np-item{display:flex;align-items:flex-start;gap:8px;padding:9px 12px;
+  border-bottom:1px solid #F5F7FA;cursor:pointer;transition:.15s}
+.np-item:hover{background:#F8FAFC}
+.np-item .npic{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:13px;flex-shrink:0}
+.np-item .nptxt .npt{font-size:11px;font-weight:600}
+.np-item .nptxt .nps{font-size:9.5px;color:var(--mu);margin-top:1px}
+.np-footer{padding:8px 12px;text-align:center;font-size:11px;color:var(--info);
+  cursor:pointer;border-top:1px solid var(--bdr)}
+.np-footer:hover{background:#EEF4FB}
+
+/* PRINT */
+@media print{
+  .sb,.hdr .hright,.hbtn,.snap,.tsbtn,.vtab{display:none!important}
+  .hdr{box-shadow:none}
+  .main{padding:0}
+  .mg{grid-template-columns:1fr 1fr;grid-template-rows:auto auto auto}
+  .aev{grid-column:1/-1;grid-row:3}
+  .card{box-shadow:none;break-inside:avoid}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════ HEADER ══════════════════ -->
+<header class="hdr">
+  <div class="logo-wrap">
+    <img src="images/kth_logo.png" alt="KTH" style="height:40px;width:40px;border-radius:6px;flex-shrink:0">
+    <div class="logo-txt">
+      <div class="t1">ELECTRICAL BUS ENERGY</div>
+      <div class="t2">Field Measurement Platform</div>
+    </div>
+  </div>
+  <div class="hsep"></div>
+  <div class="hcenter">
+    <div class="badge-live"><span class="ldot"></span>LIVE</div>
+    <div class="hpill"><span>Bus ID:</span><strong id="hBusId">BUS-2034</strong></div>
+    <div class="hpill"><span>Route:</span><strong>55</strong></div>
+    <div class="hpill"><span>Trip ID:</span><strong>2025-05-13_01</strong></div>
+  </div>
+  <div class="hright">
+    <!-- Notifications -->
+    <button class="hbtn nbadge" data-n="3" id="notifBtn" onclick="toggleNotif()" title="Notifications">
+      <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+    </button>
+    <!-- Data Explorer -->
+    <button class="hbtn" onclick="openDE()" title="Data Explorer">
+      <svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+    </button>
+    <!-- Reports -->
+    <button class="hbtn" onclick="openRP()" title="Reports & Export" style="background:rgba(255,255,255,.18)">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+    </button>
+    <!-- Settings -->
+    <button class="hbtn" title="Settings">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06-.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+    <div class="hsep"></div>
+    <div class="htime">
+      <div class="t1" id="hClock">09:15:33</div>
+      <div class="t2" id="hDate">2025-05-13 UTC</div>
+    </div>
+  </div>
+</header>
+
+<!-- ══════════════════ LAYOUT ══════════════════ -->
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <nav class="sb">
+    <div class="nitem active" onclick="navClick(this,'dash')">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard
+    </div>
+    <div class="nitem" onclick="navClick(this,'dummy')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>Thermal Dummy
+    </div>
+    <div class="nitem" onclick="navClick(this,'map')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>Live Map
+    </div>
+    <div class="nitem" onclick="navClick(this,'graphs')">
+      <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Graphs
+    </div>
+    <div class="nitem" onclick="navClick(this,'events')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Events
+    </div>
+    <div class="nitem" onclick="openRP()">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Reports
+    </div>
+    <div class="nitem" onclick="openDE()">
+      <svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>Data Explorer
+    </div>
+    <div class="nitem">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83"/></svg>Settings
+    </div>
+
+    <div class="ssec">Layers</div>
+    <div class="lrow"><div class="llbl"><div class="ldotc" style="background:#EF5350"></div>Thermal</div><div class="tog ton" onclick="this.className='tog '+(this.classList.contains('ton')?'toff':'ton')"></div></div>
+    <div class="lrow"><div class="llbl"><div class="ldotc" style="background:#42A5F5"></div>Air Quality</div><div class="tog ton2" onclick="this.className='tog '+(this.classList.contains('ton2')?'toff':'ton2')"></div></div>
+    <div class="lrow"><div class="llbl"><div class="ldotc" style="background:#FFCA28"></div>Energy</div><div class="tog ton3" onclick="this.className='tog '+(this.classList.contains('ton3')?'toff':'ton3')"></div></div>
+    <div class="lrow"><div class="llbl"><div class="ldotc" style="background:#66BB6A"></div>Occupancy</div><div class="tog ton4" onclick="this.className='tog '+(this.classList.contains('ton4')?'toff':'ton4')"></div></div>
+    <div class="lrow"><div class="llbl"><div class="ldotc" style="background:#26C6DA"></div>Airflow</div><div class="tog ton4" onclick="this.className='tog '+(this.classList.contains('ton4')?'toff':'ton4')"></div></div>
+
+    <div class="ssec" style="margin-top:14px">System Health</div>
+    <div class="sysall"><div class="sadog"></div>All systems operational</div>
+    <div class="sysrow"><span>Sensors</span><span class="sysval">100%</span></div>
+    <div class="sysrow"><span>Network</span><span class="sysval">100%</span></div>
+    <div class="sysrow"><span>Database</span><span class="sysval">100%</span></div>
+    <div class="sbver">v1.0.0</div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main">
+    <!-- DASHBOARD VIEW -->
+    <div id="v-dash" class="view-panel active">
+    <div class="mg">
+
+      <!-- BUS OVERVIEW -->
+      <div class="card bus-ov">
+        <div class="ch">
+          <h3>Bus Overview – Live Thermal State</h3>
+          <div class="vtab">
+            <div class="vt active" id="tabTop" onclick="switchView('top')">Top View</div>
+            <div class="vt" id="tabSide" onclick="switchView('side')">Side View</div>
+          </div>
+        </div>
+        <div class="bv-wrap">
+          <!-- TOP VIEW -->
+          <div id="viewTop">
+            <div class="blbl">MRT Distribution — Top View</div>
+            <div class="brel">
+              <svg id="busSvg" viewBox="0 0 560 155" width="100%" style="display:block">
+                <defs>
+                  <linearGradient id="hg" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%"   stop-color="#1565C0"/>
+                    <stop offset="18%"  stop-color="#0097A7"/>
+                    <stop offset="36%"  stop-color="#43A047"/>
+                    <stop offset="55%"  stop-color="#FDD835"/>
+                    <stop offset="72%"  stop-color="#FB8C00"/>
+                    <stop offset="88%"  stop-color="#E53935"/>
+                    <stop offset="100%" stop-color="#B71C1C"/>
+                  </linearGradient>
+                  <clipPath id="bc"><path d="M60,8 L510,8 Q542,8 542,30 L542,125 Q542,147 510,147 L60,147 Q28,147 18,125 L18,30 Q28,8 60,8 Z"/></clipPath>
+                </defs>
+                <path d="M60,8 L510,8 Q542,8 542,30 L542,125 Q542,147 510,147 L60,147 Q28,147 18,125 L18,30 Q28,8 60,8 Z" fill="#D0D8E4" stroke="#94A3B8" stroke-width="2"/>
+                <image href="images/bus_top.png" x="18" y="8" width="524" height="139" preserveAspectRatio="xMidYMid slice" clip-path="url(#bc)"/>
+                <rect x="68" y="8" width="474" height="139" fill="url(#hg)" clip-path="url(#bc)" opacity=".38"/>
+                <rect x="68" y="8"   width="474" height="18" fill="rgba(0,0,0,.18)" clip-path="url(#bc)"/>
+                <rect x="68" y="129" width="474" height="18" fill="rgba(0,0,0,.18)" clip-path="url(#bc)"/>
+                <line x1="88" y1="26" x2="88" y2="129" stroke="rgba(0,0,0,.35)" stroke-width="2" stroke-dasharray="4,3"/>
+                <path d="M20,35 L88,28M20,120 L88,127" stroke="rgba(255,255,255,.4)" stroke-width="1.5"/>
+                <rect x="140" y="129" width="28" height="18" fill="#4CAF50" clip-path="url(#bc)" opacity=".9"/>
+                <rect x="390" y="129" width="28" height="18" fill="#4CAF50" clip-path="url(#bc)" opacity=".9"/>
+                <rect x="140" y="8"   width="28" height="18" fill="#4CAF50" clip-path="url(#bc)" opacity=".6"/>
+                <rect x="390" y="8"   width="28" height="18" fill="#4CAF50" clip-path="url(#bc)" opacity=".6"/>
+                <g id="seatGroup"></g>
+                <g id="sensorGroup"></g>
+                <path d="M60,8 L510,8 Q542,8 542,30 L542,125 Q542,147 510,147 L60,147 Q28,147 18,125 L18,30 Q28,8 60,8 Z" fill="none" stroke="#475569" stroke-width="2"/>
+                <ellipse cx="130" cy="147" rx="22" ry="8" fill="#334155"/>
+                <ellipse cx="440" cy="147" rx="22" ry="8" fill="#334155"/>
+                <ellipse cx="130" cy="8"   rx="22" ry="8" fill="#334155"/>
+                <ellipse cx="440" cy="8"   rx="22" ry="8" fill="#334155"/>
+              </svg>
+              <div class="scbar">
+                <div class="scbar-title">MRT (°C)</div>
+                <div class="scbar-inner">
+                  <div class="scbar-grad"></div>
+                  <div class="scbar-ticks"><span>40</span><span>32</span><span>24</span><span>16</span><span>8</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- SIDE VIEW -->
+          <div id="viewSide" style="display:none">
+            <div class="blbl">Side View — Instrumented Bus</div>
+            <img src="images/bus_side.png" alt="Bus side view" style="width:100%;max-height:130px;object-fit:contain;display:block;border-radius:6px">
+          </div>
+          <div class="sl-row">
+            <div class="sli"><div class="sld" style="background:#3B82F6">A</div>Temp / MRT</div>
+            <div class="sli"><div class="sld" style="background:#F59E0B">B</div>Door / RH</div>
+            <div class="sli"><div class="sld" style="background:#22C55E">C</div>IAQ / Solar</div>
+            <div class="sli"><div class="sld" style="background:#8B5CF6">D</div>Occ / MRT Sphere</div>
+            <div class="sli"><div style="width:11px;height:11px;background:#4CAF50;border-radius:2px;flex-shrink:0"></div>Door</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KEY INDICATORS -->
+      <div class="card ki">
+        <div class="ch"><h3>Key Indicators</h3></div>
+        <div class="kgrid">
+          <div class="kc"><div class="klbl">Air Temp. (Avg)</div><div><span class="kv" id="kAT">24.1</span><span class="ku">°C</span></div><div class="kd ddn" id="kATd">↓ 0.3 °C</div></div>
+          <div class="kc"><div class="klbl">MRT (Avg)</div><div><span class="kv" id="kMRT">28.6</span><span class="ku">°C</span></div><div class="kd dup" id="kMRTd">↑ 1.2 °C</div></div>
+          <div class="kc"><div class="klbl">Relative Humidity</div><div><span class="kv" id="kRH">41</span><span class="ku">%</span></div><div class="kd ddn" id="kRHd">↓ 2 %</div></div>
+          <div class="kc"><div class="klbl">CO₂</div><div><span class="kv" id="kCO2">812</span><span class="ku">ppm</span></div><div class="kd dup" id="kCO2d">↑ 32 ppm</div></div>
+          <div class="kc"><div class="klbl">PM2.5</div><div><span class="kv" id="kPM">7.1</span><span class="ku">μg/m³</span></div><div class="kd ddn" id="kPMd">↓ 1.5</div></div>
+          <div class="kc"><div class="klbl">Occupancy</div><div><span class="kv" id="kOcc">23</span><span class="ku">pax</span></div><div class="kd" id="kOccPct" style="color:var(--info)">62% capacity</div><div class="occbar"><div class="occfill" id="kOccBar" style="width:62%"></div></div></div>
+          <div class="kc"><div class="klbl">Thermal Resets</div><div><span class="kv" id="kRst">5</span><span class="ku"> today</span></div></div>
+          <div class="kc"><div class="klbl">Solar Irr.</div><div><span class="kv" id="kSol">412</span><span class="ku">W/m²</span></div><div class="kd dup" id="kSold">↑ 18 W/m²</div></div>
+          <div class="kc ksp"><div class="klbl">HVAC State</div><div class="khvac" id="kHVAC">COOLING</div><div style="font-size:10px;color:var(--mu);margin-top:2px">Power: <strong id="kHp">7.2 kW</strong></div></div>
+        </div>
+      </div>
+
+      <!-- ACTIVE EVENTS -->
+      <div class="card aev">
+        <div class="ch"><h3>Active Events</h3><span style="font-size:10px;color:var(--info);cursor:pointer" onclick="openDE()">View all</span></div>
+        <div class="evlist">
+          <div class="evitem eo"><div class="evbadge bA">A</div><div class="evcon"><div class="evname">Solar Irradiance High (Right Side)</div><div class="evsince">Since 09:14:21</div></div><div class="evr"><div class="evst so">OPEN</div><div class="evdur">00:01:12</div></div></div>
+          <div class="evitem eo"><div class="evbadge bB">B</div><div class="evcon"><div class="evname">Door Open – Front</div><div class="evsince">Since 09:14:05</div></div><div class="evr"><div class="evst so">OPEN</div><div class="evdur">00:01:28</div></div></div>
+          <div class="evitem eo"><div class="evbadge bD">D</div><div class="evcon"><div class="evname">MRT Asymmetry High</div><div class="evsince">Since 09:13:47</div></div><div class="evr"><div class="evst so">OPEN</div><div class="evdur">00:01:46</div></div></div>
+          <div class="evitem ea"><div class="evbadge bB">B</div><div class="evcon"><div class="evname">CO₂ Rising</div><div class="evsince">Since 09:13:10</div></div><div class="evr"><div class="evst sa">ACTIVE</div><div class="evdur">00:02:23</div></div></div>
+          <div class="evitem ea"><div class="evbadge bA">A</div><div class="evcon"><div class="evname">Temp. Gradient Front–Rear</div><div class="evsince">Since 09:12:58</div></div><div class="evr"><div class="evst sa">ACTIVE</div><div class="evdur">00:02:35</div></div></div>
+          <div class="evitem ec"><div class="evbadge bA">A</div><div class="evcon"><div class="evname">PM2.5 Transient</div><div class="evsince">09:12:01 – 09:13:08</div></div><div class="evr"><div class="evst sc">CLOSED</div><div class="evdur">00:01:07</div></div></div>
+          <div class="evitem ec"><div class="evbadge bC">C</div><div class="evcon"><div class="evname">IAQ Threshold Exceeded</div><div class="evsince">09:10:15 – 09:11:42</div></div><div class="evr"><div class="evst sc">CLOSED</div><div class="evdur">00:01:27</div></div></div>
+          <div class="evitem ec"><div class="evbadge bD">D</div><div class="evcon"><div class="evname">Passenger Count Spike</div><div class="evsince">09:08:30 – 09:09:45</div></div><div class="evr"><div class="evst sc">CLOSED</div><div class="evdur">00:01:15</div></div></div>
+        </div>
+        <div style="padding:3px 9px;border-top:1px solid var(--bdr);font-size:9.5px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.5px">Event Summary (Today)</div>
+        <div class="evsum">
+          <div class="sbox sbo"><div class="sv">8</div><div class="sl">Open</div></div>
+          <div class="sbox sbc"><div class="sv">12</div><div class="sl">Closed</div></div>
+          <div class="sbox sba"><div class="sv">3</div><div class="sl">Active</div></div>
+        </div>
+      </div>
+
+      <!-- TIME SERIES -->
+      <div class="card ts">
+        <div class="ch">
+          <h3>Time Series – Synchronized Data</h3>
+          <div class="chr">
+            <button onclick="downloadCSV()" style="background:var(--kth);color:#fff;border:none;border-radius:4px;padding:3px 9px;font-size:10px;cursor:pointer" title="Download CSV">⬇ CSV</button>
+            <div class="tszoom">
+              <button onclick="tsZoom(-1)" title="Zoom out">−</button>
+              <button onclick="tsZoom(1)" title="Zoom in">+</button>
+              <div class="tswin" id="tsWin">30m</div>
+            </div>
+          </div>
+        </div>
+        <div style="padding:0 12px 6px">
+          <div class="tstb">
+            <div class="tsbtn on at"  onclick="tog(this,0)">Air Temp.</div>
+            <div class="tsbtn on mr"  onclick="tog(this,1)">MRT</div>
+            <div class="tsbtn on rh"  onclick="tog(this,2)">RH</div>
+            <div class="tsbtn on co"  onclick="tog(this,3)">CO₂</div>
+            <div class="tsbtn on pm"  onclick="tog(this,4)">PM2.5</div>
+            <div class="tsbtn on so2" onclick="tog(this,5)">Solar Irr.</div>
+            <div class="tsbtn on oc"  onclick="tog(this,6)">Occupancy</div>
+            <div class="tsbtn on ds"  onclick="tog(this,7)">Door State</div>
+            <div class="tsbtn on hp"  onclick="tog(this,8)">HVAC Power</div>
+          </div>
+          <div class="cwrap"><canvas id="tsChart"></canvas></div>
+          <div class="dbar-row">
+            <div class="dbar-lbl">Door State</div>
+            <div class="dbar-segs" id="doorViz"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- THERMAL DUMMY + MAP -->
+      <div class="card td">
+        <div class="ch"><h3>Thermal Dummy – Live State</h3></div>
+        <div class="dtabs">
+          <div class="dtab active" onclick="dTab(this,0)">Temperatures</div>
+          <div class="dtab" onclick="dTab(this,1)">Heater Output</div>
+        </div>
+        <div class="dbody">
+          <div class="dfig">
+            <div class="manikin-wrap" style="width:82px">
+              <img src="images/manikin.png" alt="Thermal Dummy" style="width:82px">
+              <div id="manikinDotsSm"></div>
+            </div>
+          </div>
+          <div class="dtemps" id="dTemps"></div>
+        </div>
+        <div class="dleg">
+          <div class="dli"><div class="dld" style="background:#3B82F6"></div>Int. Temp.</div>
+          <div class="dli"><div class="dld" style="background:#EF4444"></div>Surf. Temp.</div>
+        </div>
+        <!-- Location info hidden spans (keep IDs so live-update still works) -->
+        <span id="lLat" style="display:none">59.3498</span>
+        <span id="lLon" style="display:none">18.0686</span>
+        <span id="lSpd" style="display:none">42</span>
+        <span id="lHdg" style="display:none">135</span>
+      </div>
+
+    </div><!-- end grid -->
+    </div><!-- end v-dash -->
+
+    <!-- MAP VIEW -->
+    <div id="v-map" class="view-panel">
+      <div class="mv-wrap">
+        <div class="card mv-map-card">
+          <div class="ch">
+            <h3>Live Map – Bus Route 55</h3>
+            <span style="font-size:9px;color:var(--mu)">© <a href="https://www.openstreetmap.org/copyright" style="color:var(--info)" target="_blank">OpenStreetMap</a></span>
+          </div>
+          <div id="fullMap"></div>
+        </div>
+        <div class="mv-side">
+          <!-- Location Card -->
+          <div class="loc-card">
+            <div class="ch"><h3>GPS Position</h3></div>
+            <div class="loc-grid">
+              <div class="loc-item"><span class="loc-k">Latitude</span><span class="loc-v" id="mvLat">59.3498</span></div>
+              <div class="loc-item"><span class="loc-k">Longitude</span><span class="loc-v" id="mvLon">18.0686</span></div>
+              <div class="loc-item"><span class="loc-k">Speed</span><span class="loc-v"><span id="mvSpd">42</span> <span style="font-size:10px;color:var(--mu)">km/h</span></span></div>
+              <div class="loc-item"><span class="loc-k">Heading</span><span class="loc-v"><span id="mvHdg">135</span><span style="font-size:10px;color:var(--mu)">°</span></span></div>
+            </div>
+          </div>
+          <!-- Weather Card -->
+          <div class="loc-card" id="wxCard">
+            <div class="wx-loading">Loading weather…</div>
+          </div>
+        </div>
+      </div>
+    </div><!-- end v-map -->
+
+    <!-- THERMAL DUMMY FULL VIEW -->
+    <div id="v-dummy" class="view-panel">
+      <div class="card" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+        <div class="ch">
+          <h3>Thermal Dummy – Live Body State</h3>
+          <div class="chr">
+            <button onclick="renderDummyFull()" style="background:#F8FAFC;border:1px solid var(--bdr);border-radius:4px;padding:3px 9px;font-size:10px;cursor:pointer;color:var(--mu)">↺ Refresh</button>
+          </div>
+        </div>
+        <div class="dtabs" style="flex-shrink:0">
+          <div class="dtab active" onclick="dvTab(this,0)">Temperatures</div>
+          <div class="dtab" onclick="dvTab(this,1)">Thermal Comfort</div>
+        </div>
+        <div class="dv-wrap">
+          <div class="dv-fig-col">
+            <div class="manikin-wrap" style="width:140px">
+              <img src="images/manikin.png" alt="Thermal Dummy" style="width:140px">
+              <div id="manikinDotsLg"></div>
+            </div>
+            <div class="dv-legend">
+              <div class="dv-li"><div class="dv-ld" style="background:#3B82F6"></div>Internal</div>
+              <div class="dv-li"><div class="dv-ld" style="background:#EF4444"></div>Surface</div>
+            </div>
+          </div>
+          <div class="dv-data-col" id="dvDataCol">
+            <!-- populated by renderDummyFull() -->
+          </div>
+        </div>
+      </div>
+    </div><!-- end v-dummy -->
+
+    <!-- GRAPHS VIEW -->
+    <div id="v-graphs" class="view-panel">
+      <div class="gv">
+
+        <!-- Row 1: Bus Time Series + Bus Histogram -->
+        <div class="gv-row">
+          <div class="card gv-left gv-zoom" style="display:flex;flex-direction:column">
+            <div class="ch">
+              <h3>Bus Sensors – Time Series</h3>
+              <div class="chr">
+                <button onclick="downloadCSV()" style="background:var(--kth);color:#fff;border:none;border-radius:4px;padding:3px 9px;font-size:10px;cursor:pointer">⬇ CSV</button>
+                <button class="gv-save" onclick="saveChartPng('gvBusChart','bus_timeseries')">⬇ PNG</button>
+              </div>
+            </div>
+            <div class="gv-canwrap"><canvas id="gvBusChart"></canvas></div>
+          </div>
+          <div class="card gv-right gv-zoom" style="display:flex;flex-direction:column">
+            <div class="ch">
+              <h3>Histogram</h3>
+              <div class="chr">
+                <select class="gv-sel" id="gvHistSel" onchange="renderGvHist()">
+                  <option value="0">Air Temp. (°C)</option>
+                  <option value="1">MRT (°C)</option>
+                  <option value="2">RH (%)</option>
+                  <option value="3">CO₂ (ppm)</option>
+                  <option value="4">PM2.5 (μg/m³)</option>
+                  <option value="5">Solar Irr. (W/m²)</option>
+                  <option value="6">Occupancy (pax)</option>
+                  <option value="8">HVAC Power (kW)</option>
+                </select>
+                <button class="gv-save" onclick="saveChartPng('gvHistChart','bus_histogram')">⬇ PNG</button>
+              </div>
+            </div>
+            <div class="gv-canwrap"><canvas id="gvHistChart"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Row 2: Dummy Time Series + Dummy Histogram -->
+        <div class="gv-row">
+          <div class="card gv-left gv-zoom" style="display:flex;flex-direction:column">
+            <div class="ch">
+              <h3>Thermal Dummy – Segment Temperatures</h3>
+              <button class="gv-save" onclick="saveChartPng('gvDummyChart','dummy_timeseries')">⬇ PNG</button>
+            </div>
+            <div class="gv-canwrap"><canvas id="gvDummyChart"></canvas></div>
+          </div>
+          <div class="card gv-right gv-zoom" style="display:flex;flex-direction:column">
+            <div class="ch">
+              <h3>Dummy Histogram</h3>
+              <div class="chr">
+                <select class="gv-sel" id="gvDummyHistSel" onchange="renderGvDummyHist()">
+                  <option value="0">Head Int.</option>
+                  <option value="1">Head Surf.</option>
+                  <option value="2">Chest Int.</option>
+                  <option value="3">Chest Surf.</option>
+                  <option value="4">Abdomen Int.</option>
+                  <option value="5">Abdomen Surf.</option>
+                  <option value="6">Thigh L Int.</option>
+                  <option value="7">Thigh L Surf.</option>
+                  <option value="8">Shin L</option>
+                </select>
+                <button class="gv-save" onclick="saveChartPng('gvDummyHistChart','dummy_histogram')">⬇ PNG</button>
+              </div>
+            </div>
+            <div class="gv-canwrap"><canvas id="gvDummyHistChart"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Row 3: Sankey + Scatter -->
+        <div class="gv-row">
+          <div class="card gv-half gv-zoom" style="display:flex;flex-direction:column">
+            <div class="ch">
+              <h3>Energy Flow – Battery &amp; Powertrain</h3>
+              <div class="chr">
+                <span style="font-size:9px;color:var(--mu)" id="sankeyKw"></span>
+                <button class="gv-save" onclick="saveSvgPng('sankeySvg','energy_flow')">⬇ PNG</button>
+              </div>
+            </div>
+            <div class="sankey-wrap"><svg id="sankeySvg" viewBox="0 0 500 280"></svg></div>
+          </div>
+          <div class="card gv-half gv-zoom" style="display:flex;flex-direction:column">
+            <div class="ch">
+              <h3>XY Scatter</h3>
+              <div class="chr" style="gap:4px">
+                <span style="font-size:10px;color:var(--mu)">X:</span>
+                <select class="gv-sel" id="scatX" onchange="renderScatter()">
+                  <option value="0">Air Temp.</option>
+                  <option value="1">MRT</option>
+                  <option value="2">RH</option>
+                  <option value="3" selected>CO₂</option>
+                  <option value="4">PM2.5</option>
+                  <option value="6">Occupancy</option>
+                  <option value="8">HVAC kW</option>
+                </select>
+                <span style="font-size:10px;color:var(--mu)">Y:</span>
+                <select class="gv-sel" id="scatY" onchange="renderScatter()">
+                  <option value="0" selected>Air Temp.</option>
+                  <option value="1">MRT</option>
+                  <option value="2">RH</option>
+                  <option value="3">CO₂</option>
+                  <option value="4">PM2.5</option>
+                  <option value="6">Occupancy</option>
+                  <option value="8">HVAC kW</option>
+                </select>
+                <button class="gv-save" onclick="saveChartPng('gvScatterChart','xy_scatter')">⬇ PNG</button>
+              </div>
+            </div>
+            <div class="gv-canwrap"><canvas id="gvScatterChart"></canvas></div>
+          </div>
+        </div>
+
+      </div><!-- end .gv -->
+    </div><!-- end v-graphs -->
+
+    <!-- SNAPSHOT BAR -->
+    <div class="snap">
+      <div class="snaplbl">Snapshot (<span id="sTime">09:15:33</span>)</div>
+      <div class="snapitems">
+        <div class="snapitem"><div class="sico" style="background:#F44336"><svg viewBox="0 0 24 24"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg></div><div class="sinfo"><div class="sk">Air Temp.</div><div><span class="sv2" id="sAT">24.1</span><span class="su">°C</span></div></div></div>
+        <div class="snapitem"><div class="sico" style="background:#FF7043"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2"/></svg></div><div class="sinfo"><div class="sk">MRT</div><div><span class="sv2" id="sMRT">28.6</span><span class="su">°C</span></div></div></div>
+        <div class="snapitem"><div class="sico" style="background:#2196F3"><svg viewBox="0 0 24 24"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></div><div class="sinfo"><div class="sk">RH</div><div><span class="sv2" id="sRH">41</span><span class="su">%</span></div></div></div>
+        <div class="snapitem"><div class="sico" style="background:#9C27B0"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div><div class="sinfo"><div class="sk">CO₂</div><div><span class="sv2" id="sCO2">812</span><span class="su">ppm</span></div></div></div>
+        <div class="snapitem"><div class="sico" style="background:#00BCD4"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div><div class="sinfo"><div class="sk">PM2.5</div><div><span class="sv2" id="sPM">7.1</span><span class="su">μg/m³</span></div></div></div>
+        <div class="snapitem"><div class="sico" style="background:#8BC34A"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42"/></svg></div><div class="sinfo"><div class="sk">Solar Irr.</div><div><span class="sv2" id="sSol">412</span><span class="su">W/m²</span></div></div></div>
+        <div class="snapitem"><div class="sico" style="background:#3F51B5"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><div class="sinfo"><div class="sk">Occupancy</div><div><span class="sv2" id="sOcc">23</span><span class="su">pax</span></div></div></div>
+        <div class="snapitem"><div class="sico" style="background:#607D8B"><svg viewBox="0 0 24 24"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg></div><div class="sinfo"><div class="sk">Speed</div><div><span class="sv2" id="sSpd">42</span><span class="su">km/h</span></div></div></div>
+        <div class="snapitem"><div class="sico" style="background:#795548"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8l4 4-4 4M8 12h8"/></svg></div><div class="sinfo"><div class="sk">Heading</div><div><span class="sv2" id="sHdg">135</span><span class="su">°</span></div></div></div>
+      </div>
+      <div class="snapver">v1.0.0</div>
+    </div>
+  </main>
+</div><!-- end layout -->
+
+<!-- ═══════════════════════════════
+     REPORTS PANEL
+     ═══════════════════════════════ -->
+<div class="rp-overlay" id="rpOverlay" onclick="closeRP()"></div>
+<div class="rp" id="rpPanel">
+  <div class="rp-hdr">
+    <h2>📋 Reports &amp; Export</h2>
+    <button class="rp-close" onclick="closeRP()">✕</button>
+  </div>
+  <div class="rp-body">
+    <!-- Trip Summary -->
+    <div class="rp-sec">
+      <div class="rp-sec-title">Current Trip</div>
+      <div class="trip-card">
+        <div class="tc-item"><div class="tck">Trip ID</div><div class="tcv">2025-05-13_01</div></div>
+        <div class="tc-item"><div class="tck">Vehicle</div><div class="tcv">BUS-2034</div></div>
+        <div class="tc-item"><div class="tck">Route</div><div class="tcv">55 – Stockholm</div></div>
+        <div class="tc-item"><div class="tck">Started</div><div class="tcv">08:45:00 UTC</div></div>
+        <div class="tc-item"><div class="tck">Duration</div><div class="tcv" id="rp-dur">00:30:33</div></div>
+        <div class="tc-item"><div class="tck">Distance</div><div class="tcv">~12.4 km</div></div>
+      </div>
+    </div>
+
+    <!-- Statistics Table -->
+    <div class="rp-sec">
+      <div class="rp-sec-title">Session Statistics</div>
+      <table class="stats-table" id="statsTable">
+        <thead><tr><th>Metric</th><th>Min</th><th>Max</th><th>Avg</th><th>Unit</th></tr></thead>
+        <tbody>
+          <tr><td class="met">Air Temp.</td><td class="minv" id="st-at-min">–</td><td class="maxv" id="st-at-max">–</td><td class="avgv" id="st-at-avg">–</td><td style="color:var(--mu)">°C</td></tr>
+          <tr><td class="met">MRT</td><td class="minv" id="st-mrt-min">–</td><td class="maxv" id="st-mrt-max">–</td><td class="avgv" id="st-mrt-avg">–</td><td style="color:var(--mu)">°C</td></tr>
+          <tr><td class="met">Humidity</td><td class="minv" id="st-rh-min">–</td><td class="maxv" id="st-rh-max">–</td><td class="avgv" id="st-rh-avg">–</td><td style="color:var(--mu)">%</td></tr>
+          <tr><td class="met">CO₂</td><td class="minv" id="st-co2-min">–</td><td class="maxv" id="st-co2-max">–</td><td class="avgv" id="st-co2-avg">–</td><td style="color:var(--mu)">ppm</td></tr>
+          <tr><td class="met">PM2.5</td><td class="minv" id="st-pm-min">–</td><td class="maxv" id="st-pm-max">–</td><td class="avgv" id="st-pm-avg">–</td><td style="color:var(--mu)">μg/m³</td></tr>
+          <tr><td class="met">Solar Irr.</td><td class="minv" id="st-sol-min">–</td><td class="maxv" id="st-sol-max">–</td><td class="avgv" id="st-sol-avg">–</td><td style="color:var(--mu)">W/m²</td></tr>
+          <tr><td class="met">Occupancy</td><td class="minv" id="st-occ-min">–</td><td class="maxv" id="st-occ-max">–</td><td class="avgv" id="st-occ-avg">–</td><td style="color:var(--mu)">pax</td></tr>
+          <tr><td class="met">HVAC Power</td><td class="minv" id="st-hvac-min">–</td><td class="maxv" id="st-hvac-max">–</td><td class="avgv" id="st-hvac-avg">–</td><td style="color:var(--mu)">kW</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Live Location -->
+    <div class="rp-sec">
+      <div class="rp-sec-title">Live Location</div>
+      <div class="rp-loc-info">
+        <div class="rp-locgrid">
+          <div class="rp-locitem"><span class="rp-lk">Latitude</span><span class="rp-lv" id="rpLat">59.3498</span></div>
+          <div class="rp-locitem"><span class="rp-lk">Longitude</span><span class="rp-lv" id="rpLon">18.0686</span></div>
+          <div class="rp-locitem"><span class="rp-lk">Speed</span><span class="rp-lv"><span id="rpSpd">42</span> km/h</span></div>
+          <div class="rp-locitem"><span class="rp-lk">Heading</span><span class="rp-lv"><span id="rpHdg">135</span>°</span></div>
+        </div>
+        <div id="leafletMapRP" style="height:200px;border-radius:6px;overflow:hidden;margin-top:8px;border:1px solid var(--bdr)"></div>
+        <div style="font-size:8.5px;color:var(--mu2);margin-top:3px;text-align:right">© <a href="https://www.openstreetmap.org/copyright" style="color:var(--info)" target="_blank">OpenStreetMap</a> contributors</div>
+      </div>
+    </div>
+
+    <!-- Thermal Dummy Live State -->
+    <div class="rp-sec">
+      <div class="rp-sec-title">Thermal Dummy – Live State</div>
+      <div class="rp-td-wrap">
+        <div class="rp-td-list" id="rpDTemps">
+          <!-- populated by renderRPDummy() -->
+        </div>
+        <div class="rp-td-leg">
+          <div class="rp-tdi"><div class="rp-tdd" style="background:#3B82F6"></div>Int. Temp.</div>
+          <div class="rp-tdi"><div class="rp-tdd" style="background:#EF4444"></div>Surf. Temp.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Download Options -->
+    <div class="rp-sec">
+      <div class="rp-sec-title">Export &amp; Download</div>
+      <div class="dl-btns">
+        <button class="dl-btn primary" onclick="downloadCSV()">
+          <div class="dl-icon" style="background:rgba(255,255,255,.15)">📊</div>
+          <div class="dl-info"><div class="dln">Download CSV</div><div class="dls">All sensor time series · current session</div></div>
+        </button>
+        <button class="dl-btn" onclick="downloadJSON()">
+          <div class="dl-icon" style="background:#FEF3C7">📦</div>
+          <div class="dl-info"><div class="dln">Export JSON</div><div class="dls">MQTT payload format</div></div>
+        </button>
+        <button class="dl-btn" onclick="printReport()">
+          <div class="dl-icon" style="background:#F0FDF4">🖨️</div>
+          <div class="dl-info"><div class="dln">Print / PDF</div><div class="dls">Browser print dialog</div></div>
+        </button>
+        <button class="dl-btn" onclick="downloadDummyCSV()">
+          <div class="dl-icon" style="background:#EFF6FF">🧍</div>
+          <div class="dl-info"><div class="dln">Thermal Dummy CSV</div><div class="dls">Body segment temperatures</div></div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Previous Trips -->
+    <div class="rp-sec">
+      <div class="rp-sec-title">Previous Trips</div>
+      <div class="prev-trips">
+        <div class="pt-item">
+          <div class="pt-info"><div class="pt-id">2025-05-12_02 — BUS-2034</div><div class="pt-meta">Route 55 · 42 min · Morning run · 18.2 km</div></div>
+          <button class="pt-dl" onclick="dlPrevTrip('2025-05-12_02')">⬇ CSV</button>
+        </div>
+        <div class="pt-item">
+          <div class="pt-info"><div class="pt-id">2025-05-12_01 — BUS-2034</div><div class="pt-meta">Route 55 · 38 min · Evening run · 16.7 km</div></div>
+          <button class="pt-dl" onclick="dlPrevTrip('2025-05-12_01')">⬇ CSV</button>
+        </div>
+        <div class="pt-item">
+          <div class="pt-info"><div class="pt-id">2025-05-11_01 — BUS-2034</div><div class="pt-meta">Route 55 · 45 min · Midday run · 19.1 km</div></div>
+          <button class="pt-dl" onclick="dlPrevTrip('2025-05-11_01')">⬇ CSV</button>
+        </div>
+        <div class="pt-item">
+          <div class="pt-info"><div class="pt-id">2025-05-10_02 — BUS-2034</div><div class="pt-meta">Route 55 · 41 min · Afternoon run · 17.4 km</div></div>
+          <button class="pt-dl" onclick="dlPrevTrip('2025-05-10_02')">⬇ CSV</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════
+     DATA EXPLORER MODAL
+     ═══════════════════════════════ -->
+<div class="de-overlay" id="deOverlay">
+  <div class="de-modal">
+    <div class="de-hdr">
+      <h2>🔍 Data Explorer</h2>
+      <button class="de-close" onclick="closeDE()">✕</button>
+    </div>
+    <div class="de-toolbar">
+      <input type="text" id="deSearch" placeholder="Filter by time, value or sensor…" oninput="filterDE()"/>
+      <span class="de-count" id="deCnt">30 records</span>
+    </div>
+    <div class="de-table-wrap">
+      <table class="de-table" id="deTable">
+        <thead>
+          <tr>
+            <th onclick="sortDE(0)">Time <span class="sort-arrow">↕</span></th>
+            <th onclick="sortDE(1)">Air Temp. °C <span class="sort-arrow">↕</span></th>
+            <th onclick="sortDE(2)">MRT °C <span class="sort-arrow">↕</span></th>
+            <th onclick="sortDE(3)">RH % <span class="sort-arrow">↕</span></th>
+            <th onclick="sortDE(4)">CO₂ ppm <span class="sort-arrow">↕</span></th>
+            <th onclick="sortDE(5)">PM2.5 μg/m³ <span class="sort-arrow">↕</span></th>
+            <th onclick="sortDE(6)">Solar W/m² <span class="sort-arrow">↕</span></th>
+            <th onclick="sortDE(7)">Occ. pax <span class="sort-arrow">↕</span></th>
+            <th onclick="sortDE(8)">HVAC kW <span class="sort-arrow">↕</span></th>
+          </tr>
+        </thead>
+        <tbody id="deTbody"></tbody>
+      </table>
+    </div>
+    <div class="de-footer">
+      <div class="de-pg">
+        <button onclick="dePage(-1)">‹ Prev</button>
+        <span id="dePageInfo">Page 1 / 1</span>
+        <button onclick="dePage(1)">Next ›</button>
+      </div>
+      <button class="de-export" onclick="downloadCSV()">⬇ Export CSV</button>
+    </div>
+  </div>
+</div>
+
+<!-- NOTIFICATION PANEL -->
+<div class="notif-panel" id="notifPanel">
+  <div class="np-hdr"><span>Notifications</span><span style="cursor:pointer;color:var(--info);font-size:11px" onclick="clearNotifs()">Clear all</span></div>
+  <div class="np-list">
+    <div class="np-item"><div class="npic" style="background:#FEF2F2">⚠️</div><div class="nptxt"><div class="npt">Solar Irradiance High</div><div class="nps">Right side — 09:14:21 UTC</div></div></div>
+    <div class="np-item"><div class="npic" style="background:#FFF7ED">🚪</div><div class="nptxt"><div class="npt">Front Door Open</div><div class="nps">Duration exceeds 90s — 09:14:05 UTC</div></div></div>
+    <div class="np-item"><div class="npic" style="background:#FEF2F2">📊</div><div class="nptxt"><div class="npt">MRT Asymmetry High</div><div class="nps">Front–rear delta &gt;8°C — 09:13:47 UTC</div></div></div>
+    <div class="np-item" style="opacity:.6"><div class="npic" style="background:#F0FDF4">✅</div><div class="nptxt"><div class="npt">PM2.5 Transient Resolved</div><div class="nps">Closed — 09:13:08 UTC</div></div></div>
+  </div>
+  <div class="np-footer" onclick="openDE()">View all events in Data Explorer</div>
+</div>
+
+<script>
+// ════════════════════════════════
+// BUS SVG – SEATS & SENSORS
+// ════════════════════════════════
+(function(){
+  const cs=[
+    [21,101,192],[0,151,167],[67,160,71],[253,216,53],[251,140,0],[229,57,53],[183,28,28]
+  ];
+  function seatCol(x){
+    const t=Math.max(0,Math.min(1,(x-100)/430));
+    const idx=Math.min(5,Math.floor(t*6));
+    const f=(t*6)-idx;
+    const c0=cs[idx],c1=cs[Math.min(6,idx+1)];
+    return `rgb(${Math.round(c0[0]+f*(c1[0]-c0[0]))},${Math.round(c0[1]+f*(c1[1]-c0[1]))},${Math.round(c0[2]+f*(c1[2]-c0[2]))})`;
+  }
+  const xs=[110,140,170,200,230,260,290,320,350,380,410,440,470,500,525];
+  let s='';
+  for(const x of xs){
+    if((x>=128&&x<=158)||(x>=382&&x<=402)) continue;
+    const c=seatCol(x);
+    [[30,0.85],[44,0.75],[89,0.75],[103,0.85]].forEach(([y,op])=>{
+      s+=`<rect x="${x-10}" y="${y}" width="18" height="12" rx="2" fill="${c}" opacity="${op}" stroke="rgba(0,0,0,.15)" stroke-width=".5"/>`;
+    });
+  }
+  document.getElementById('seatGroup').innerHTML=s;
+
+  const sc={A:'#3B82F6',B:'#F59E0B',C:'#22C55E',D:'#8B5CF6'};
+  const pts=[
+    [120,37,'A'],[200,37,'A'],[280,37,'A'],[360,37,'A'],[455,37,'A'],[525,37,'A'],
+    [120,111,'A'],[200,111,'A'],[280,111,'A'],[360,111,'A'],[455,111,'A'],[525,111,'A'],
+    [145,77,'B'],[415,77,'B'],[250,44,'B'],[450,104,'B'],
+    [165,77,'C'],[300,77,'C'],[435,77,'C'],[185,37,'C'],
+    [80,77,'D'],[310,55,'D'],[310,99,'D'],
+  ];
+  let sg='';
+  for(const [x,y,t] of pts){
+    sg+=`<circle cx="${x}" cy="${y}" r="8" fill="${sc[t]}" stroke="#fff" stroke-width="1.5"/>`;
+    sg+=`<text x="${x}" y="${y+3.5}" text-anchor="middle" font-size="7.5" font-weight="700" fill="#fff">${t}</text>`;
+  }
+  document.getElementById('sensorGroup').innerHTML=sg;
+})();
+
+// ════════════════════════════════
+// THERMAL DUMMY TEMPS
+// ════════════════════════════════
+const SEGS=[
+  {l:'Head (Int.)',  b:30.8,t:'int'},
+  {l:'Head (Surf.)', b:31.5,t:'surf'},
+  {l:'Chest (Int.)', b:33.1,t:'int'},
+  {l:'Chest (Surf.)',b:32.2,t:'surf'},
+  {l:'Abdomen (Int.)',b:33.8,t:'int'},
+  {l:'Abdomen (Surf.)',b:31.9,t:'surf'},
+  {l:'Thigh L (Int.)',b:32.7,t:'int'},
+  {l:'Thigh L (Surf.)',b:31.1,t:'surf'},
+  {l:'Thigh R (Int.)',b:32.6,t:'int'},
+  {l:'Thigh R (Surf.)',b:31.0,t:'surf'},
+  {l:'Shin L',      b:30.6,t:'int'},
+  {l:'Shin R',      b:30.5,t:'int'},
+  {l:'Feet (Avg)',  b:29.8,t:'surf'},
+];
+// Sensor dot positions on manikin image [top%, left%, color]
+// Mapped to SEGS order: Head Int, Head Surf, Chest Int, Chest Surf,
+// Abdomen Int, Abdomen Surf, Thigh L Int, Thigh L Surf,
+// Thigh R Int, Thigh R Surf, Shin L, Shin R, Feet
+const MANIKIN_DOTS=[
+  [10, 47, '#3B82F6'],  // Head (Int.)
+  [14, 58, '#EF4444'],  // Head (Surf.)
+  [28, 46, '#3B82F6'],  // Chest (Int.)
+  [32, 61, '#F97316'],  // Chest (Surf.)
+  [42, 45, '#3B82F6'],  // Abdomen (Int.)
+  [46, 59, '#F97316'],  // Abdomen (Surf.)
+  [58, 36, '#3B82F6'],  // Thigh L (Int.)
+  [62, 29, '#F97316'],  // Thigh L (Surf.)
+  [58, 57, '#3B82F6'],  // Thigh R (Int.)
+  [62, 65, '#F97316'],  // Thigh R (Surf.)
+  [73, 33, '#3B82F6'],  // Shin L
+  [73, 56, '#3B82F6'],  // Shin R
+  [86, 47, '#60A5FA'],  // Feet (Avg)
+];
+function renderManikinDots(containerId, dotPx){
+  const el=document.getElementById(containerId);
+  if(!el) return;
+  el.innerHTML=MANIKIN_DOTS.map(([t,l,c])=>
+    `<div class="m-dot" style="top:${t}%;left:${l}%;width:${dotPx}px;height:${dotPx}px;background:${c}"></div>`
+  ).join('');
+}
+window.addEventListener('load',()=>{
+  renderManikinDots('manikinDotsSm',8);
+  renderManikinDots('manikinDotsLg',12);
+});
+function tCol(v){
+  const t=Math.max(0,Math.min(1,(v-28)/8));
+  if(t<.33){const f=t*3;return `rgb(${Math.round(59+196*f)},${Math.round(130-50*f)},${Math.round(246-246*f)})`;}
+  if(t<.66){const f=(t-.33)*3;return `rgb(255,${Math.round(179-100*f)},20)`;}
+  const f=(t-.66)*3;return `rgb(${Math.round(255-35*f)},${Math.round(79)},0)`;
+}
+function renderDummy(){
+  document.getElementById('dTemps').innerHTML=SEGS.map(s=>{
+    const v=+(s.b+(Math.random()-.5)*.35).toFixed(1);
+    return `<div class="dtrow"><span class="dtseg">${s.l}</span><span class="dtval">${v}</span><div class="dtdot" style="background:${tCol(v)}"></div></div>`;
+  }).join('');
+}
+renderDummy();
+setInterval(renderDummy,3000);
+
+// ════════════════════════════════
+// CHART.JS
+// ════════════════════════════════
+const N=30;
+function genAgo(m){const d=new Date();d.setUTCMinutes(d.getUTCMinutes()-m);return d.toLocaleTimeString('en-GB',{timeZone:'UTC',hour:'2-digit',minute:'2-digit'});}
+function gs(b,r){return Array.from({length:N},()=>+(b+(Math.random()-.5)*r).toFixed(1));}
+
+const chartLabels=Array.from({length:N},(_,i)=>genAgo(N-1-i));
+const rawAt=gs(24.1,2.5), rawMrt=gs(28.6,3), rawRh=gs(41,5);
+const rawCo2=gs(812,80), rawPm=gs(7.1,2), rawSol=gs(412,50);
+const rawOcc=gs(23,5).map(v=>Math.max(0,Math.round(v)));
+const rawHvac=gs(7.2,1.5);
+
+const ctx=document.getElementById('tsChart').getContext('2d');
+const chart=new Chart(ctx,{
+  type:'line',
+  data:{
+    labels:chartLabels,
+    datasets:[
+      {label:'Air Temp. (°C)', data:rawAt,  borderColor:'#F44336',borderWidth:1.8,pointRadius:0,tension:.4,yAxisID:'yL'},
+      {label:'MRT (°C)',       data:rawMrt, borderColor:'#FF7043',borderWidth:1.8,pointRadius:0,tension:.4,yAxisID:'yL'},
+      {label:'RH (%)',         data:rawRh,  borderColor:'#2196F3',borderWidth:1.5,pointRadius:0,tension:.4,yAxisID:'yL',borderDash:[4,3]},
+      {label:'CO₂ ÷25',       data:rawCo2.map(v=>+(v/25).toFixed(2)),borderColor:'#9C27B0',borderWidth:1.5,pointRadius:0,tension:.4,yAxisID:'yL'},
+      {label:'PM2.5',          data:rawPm,  borderColor:'#00BCD4',borderWidth:1.5,pointRadius:0,tension:.4,yAxisID:'yL'},
+      {label:'Solar ÷15',      data:rawSol.map(v=>+(v/15).toFixed(2)),borderColor:'#8BC34A',borderWidth:1.5,pointRadius:0,tension:.4,yAxisID:'yL'},
+      {label:'Occupancy (pax)',data:rawOcc, borderColor:'#1A237E',borderWidth:1.8,pointRadius:0,tension:.3,yAxisID:'yR'},
+      {label:'Door State',     data:Array(N).fill(null),borderColor:'#607D8B',borderWidth:1,pointRadius:0,yAxisID:'yR'},
+      {label:'HVAC Power (kW)',data:rawHvac,borderColor:'#FF9800',borderWidth:1.5,pointRadius:0,tension:.4,borderDash:[2,2],yAxisID:'yR'},
+    ],
+  },
+  options:{
+    animation:false,responsive:true,maintainAspectRatio:false,
+    interaction:{mode:'index',intersect:false},
+    plugins:{
+      legend:{display:false},
+      tooltip:{
+        backgroundColor:'rgba(15,23,42,.92)',titleColor:'#CBD5E1',bodyColor:'#E2E8F0',
+        borderColor:'#334155',borderWidth:1,padding:8,titleFont:{size:10},bodyFont:{size:10},
+      }
+    },
+    scales:{
+      x:{grid:{color:'#F1F5F9'},ticks:{color:'#94A3B8',font:{size:9},maxTicksLimit:8,maxRotation:0}},
+      yL:{position:'left',min:0,max:40,grid:{color:'#F1F5F9'},
+        ticks:{color:'#94A3B8',font:{size:9},stepSize:8}},
+      yR:{position:'right',min:0,max:40,grid:{drawOnChartArea:false},
+        ticks:{color:'#94A3B8',font:{size:9},stepSize:10}},
+    },
+  }
+});
+
+const tsClasses=['at','mr','rh','co','pm','so2','oc','ds','hp'];
+function tog(btn,i){
+  btn.classList.toggle('on');
+  tsClasses.forEach(c=>btn.classList.remove(c));
+  if(btn.classList.contains('on')) btn.classList.add(tsClasses[i]);
+  chart.data.datasets[i].hidden=!chart.data.datasets[i].hidden;
+  chart.update('none');
+}
+
+// Door state bar
+document.getElementById('doorViz').innerHTML=[[.28,.31],[.57,.62],[.71,.73]].map(([s,e])=>
+  `<div class="dseg" style="left:${s*100}%;width:${(e-s)*100}%"></div>`).join('');
+
+let tsWindow=30;
+function tsZoom(d){
+  tsWindow=Math.max(5,Math.min(60,tsWindow+(d>0?-5:5)));
+  document.getElementById('tsWin').textContent=tsWindow+'m';
+}
+
+// ════════════════════════════════
+// LEAFLET MAP
+// ════════════════════════════════
+const busRoute=[
+  [59.312,18.053],[59.320,18.058],[59.328,18.063],
+  [59.336,18.067],[59.3498,18.0686],[59.358,18.072],
+  [59.364,18.077],[59.370,18.083]
+];
+let lmap, busMarker, rpMapInited=false;
+function initMap(){
+  if(rpMapInited) return;
+  rpMapInited=true;
+  lmap=L.map('leafletMapRP',{
+    center:[59.3498,18.0686],zoom:14,
+    zoomControl:false,attributionControl:true,
+    dragging:true,scrollWheelZoom:false,doubleClickZoom:false,
+  });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    maxZoom:19,
+    attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+  }).addTo(lmap);
+  // Route polyline
+  L.polyline(busRoute,{color:'#004B87',weight:3,opacity:.7,dashArray:'6,4'}).addTo(lmap);
+  // Stop markers
+  [[59.328,18.063,'Valhallavägen'],[59.3498,18.0686,'Lidingövägen'],[59.358,18.072,'Ropsten']].forEach(([lat,lon,name])=>{
+    L.circleMarker([lat,lon],{radius:5,fillColor:'#fff',color:'#004B87',weight:2,fillOpacity:1})
+      .bindPopup(`<b>${name}</b><br>Route 55`)
+      .addTo(lmap);
+  });
+  // Bus marker
+  const busIcon=L.divIcon({
+    html:`<div class="bus-marker-icon">🚌</div>`,
+    className:'',iconSize:[22,22],iconAnchor:[11,11]
+  });
+  busMarker=L.marker([59.3498,18.0686],{icon:busIcon,title:'BUS-2034'}).addTo(lmap);
+  busMarker.bindPopup('<b>BUS-2034</b><br>Route 55<br>Speed: 42 km/h').openPopup();
+  setTimeout(()=>lmap.invalidateSize(),350);
+}
+// Map is now lazy-inited when the Reports panel opens (see openRP)
+
+// ════════════════════════════════
+// LIVE DATA
+// ════════════════════════════════
+let live={at:24.1,mrt:28.6,rh:41,co2:812,pm:7.1,sol:412,occ:23,hvac:7.2,lat:59.3498,lon:18.0686,spd:42,hdg:135};
+let prev={...live};
+function j(b,r){return +(b+(Math.random()-.5)*r).toFixed(1);}
+
+function updateLive(){
+  prev={...live};
+  live.at  =j(24.1,.7); live.mrt=j(28.6,1.1); live.rh=j(41,1.8);
+  live.co2 =Math.round(j(812,35)); live.pm=j(7.1,.8); live.sol=Math.round(j(412,25));
+  live.occ =Math.max(0,Math.round(j(23,1.5))); live.hvac=j(7.2,.5);
+  live.spd =Math.max(0,Math.round(j(42,4)));
+  live.lat =+(live.lat+(Math.random()-.5)*.0003).toFixed(4);
+  live.lon =+(live.lon+(Math.random()-.5)*.0003).toFixed(4);
+
+  function delta(v,p){
+    const d=+(v-p).toFixed(1);
+    return {str:(d>=0?'↑ ':'↓ ')+Math.abs(d),cls:d>0?'dup':'ddn'};
+  }
+  function setKPI(id,val,did,d,unit){
+    document.getElementById(id).textContent=val;
+    const el=document.getElementById(did);
+    if(el){el.textContent=d.str+(unit?' '+unit:'');el.className='kd '+d.cls;}
+  }
+  setKPI('kAT', live.at.toFixed(1), 'kATd', delta(live.at,prev.at), '°C');
+  setKPI('kMRT',live.mrt.toFixed(1),'kMRTd',delta(live.mrt,prev.mrt),'°C');
+  document.getElementById('kRH').textContent=Math.round(live.rh);
+  document.getElementById('kCO2').textContent=live.co2;
+  document.getElementById('kPM').textContent=live.pm.toFixed(1);
+  document.getElementById('kSol').textContent=live.sol;
+  const op=Math.round(live.occ/37*100);
+  document.getElementById('kOcc').textContent=live.occ;
+  document.getElementById('kOccPct').textContent=op+'% capacity';
+  document.getElementById('kOccBar').style.width=op+'%';
+  document.getElementById('kHp').textContent=live.hvac.toFixed(1)+' kW';
+
+  // Location
+  document.getElementById('lLat').textContent=live.lat.toFixed(4);
+  document.getElementById('lLon').textContent=live.lon.toFixed(4);
+  document.getElementById('lSpd').textContent=live.spd;
+  // Sync RP location fields
+  document.getElementById('rpLat').textContent=live.lat.toFixed(4);
+  document.getElementById('rpLon').textContent=live.lon.toFixed(4);
+  document.getElementById('rpSpd').textContent=live.spd;
+  document.getElementById('rpHdg').textContent=live.hdg??'135';
+  // Sync map view location fields
+  const mvLat=document.getElementById('mvLat'); if(mvLat) mvLat.textContent=live.lat.toFixed(4);
+  const mvLon=document.getElementById('mvLon'); if(mvLon) mvLon.textContent=live.lon.toFixed(4);
+  const mvSpd=document.getElementById('mvSpd'); if(mvSpd) mvSpd.textContent=live.spd;
+  const mvHdg=document.getElementById('mvHdg'); if(mvHdg) mvHdg.textContent=live.hdg??'135';
+  if(busMarker) busMarker.setLatLng([live.lat,live.lon]);
+  if(fullBusMarker) fullBusMarker.setLatLng([live.lat,live.lon]);
+
+  // Snapshot
+  ['AT','MRT','RH','CO2','PM','Sol','Occ','Spd'].forEach((k,i)=>{
+    const vals=[live.at.toFixed(1),live.mrt.toFixed(1),Math.round(live.rh),live.co2,live.pm.toFixed(1),live.sol,live.occ,live.spd];
+    document.getElementById('s'+k).textContent=vals[i];
+  });
+
+  // Add to chart
+  const tl=new Date().toLocaleTimeString('en-GB',{timeZone:'UTC',hour:'2-digit',minute:'2-digit'});
+  chart.data.labels.push(tl); chart.data.labels.shift();
+  [live.at,live.mrt,live.rh,live.co2/25,live.pm,live.sol/15,live.occ,null,live.hvac].forEach((v,i)=>{
+    chart.data.datasets[i].data.push(v);
+    chart.data.datasets[i].data.shift();
+  });
+  chart.update('none');
+
+  // Update stats in reports panel if open
+  updateStats();
+  // Append to dummy history for graphs view
+  if(gvDummyHistory.length>0){
+    const tl=new Date().toLocaleTimeString('en-GB',{timeZone:'UTC',hour:'2-digit',minute:'2-digit'});
+    gvDummyHistory.push({time:tl,vals:SEGS.map(s=>+(s.b+(Math.random()-.5)*.35).toFixed(1))});
+    if(gvDummyHistory.length>60) gvDummyHistory.shift();
+  }
+}
+setInterval(updateLive,3000);
+
+// ════════════════════════════════
+// CLOCK
+// ════════════════════════════════
+function updateClock(){
+  const n=new Date();
+  document.getElementById('hClock').textContent=n.toLocaleTimeString('en-GB',{timeZone:'UTC'});
+  document.getElementById('sTime').textContent=n.toLocaleTimeString('en-GB',{timeZone:'UTC'});
+  document.getElementById('hDate').textContent=n.toLocaleDateString('sv-SE',{timeZone:'UTC'})+' UTC';
+}
+updateClock();setInterval(updateClock,1000);
+
+// ════════════════════════════════
+// REPORTS PANEL
+// ════════════════════════════════
+function openRP(){
+  document.getElementById('rpPanel').classList.add('open');
+  document.getElementById('rpOverlay').classList.add('open');
+  updateStats();
+  renderRPDummy();
+  // Lazy-init the map the first time, or just force a resize
+  if(!rpMapInited){ initMap(); }
+  else { setTimeout(()=>lmap.invalidateSize(),350); }
+}
+function renderRPDummy(){
+  const el=document.getElementById('rpDTemps');
+  if(!el) return;
+  el.innerHTML=SEGS.map(s=>{
+    const v=+(s.b+(Math.random()-.5)*.35).toFixed(1);
+    return `<div class="rp-tdrow"><span class="rp-tdseg">${s.l}</span><span class="rp-tdval">${v}</span><div class="rp-tddot" style="background:${tCol(v)}"></div></div>`;
+  }).join('');
+}
+function closeRP(){
+  document.getElementById('rpPanel').classList.remove('open');
+  document.getElementById('rpOverlay').classList.remove('open');
+}
+function updateStats(){
+  const ds=chart.data.datasets;
+  const metrics=[
+    {d:0,ids:['at'],mult:1},
+    {d:1,ids:['mrt'],mult:1},
+    {d:2,ids:['rh'],mult:1},
+    {d:3,ids:['co2'],mult:25},
+    {d:4,ids:['pm'],mult:1},
+    {d:5,ids:['sol'],mult:15},
+    {d:6,ids:['occ'],mult:1},
+    {d:8,ids:['hvac'],mult:1},
+  ];
+  metrics.forEach(m=>{
+    const vals=ds[m.d].data.filter(v=>v!==null).map(v=>+(v*m.mult).toFixed(1));
+    if(!vals.length) return;
+    const mn=Math.min(...vals),mx=Math.max(...vals),av=+(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1);
+    document.getElementById(`st-${m.ids[0]}-min`).textContent=mn.toFixed(1);
+    document.getElementById(`st-${m.ids[0]}-max`).textContent=mx.toFixed(1);
+    document.getElementById(`st-${m.ids[0]}-avg`).textContent=av;
+  });
+}
+
+// ════════════════════════════════
+// DOWNLOADS
+// ════════════════════════════════
+function downloadCSV(){
+  const hdrs=['timestamp_utc','air_temp_C','mrt_C','rh_pct','co2_ppm','pm25_ugm3','solar_wm2','occupancy_pax','hvac_kw'];
+  const rows=chart.data.labels.map((t,i)=>[
+    t,
+    chart.data.datasets[0].data[i]??'',
+    chart.data.datasets[1].data[i]??'',
+    chart.data.datasets[2].data[i]??'',
+    chart.data.datasets[3].data[i]!=null?(chart.data.datasets[3].data[i]*25).toFixed(0):'',
+    chart.data.datasets[4].data[i]??'',
+    chart.data.datasets[5].data[i]!=null?(chart.data.datasets[5].data[i]*15).toFixed(0):'',
+    chart.data.datasets[6].data[i]??'',
+    chart.data.datasets[8].data[i]??'',
+  ]);
+  const csv=[hdrs,...rows].map(r=>r.join(',')).join('\n');
+  triggerDownload('elbuss_BUS2034_'+Date.now()+'.csv','text/csv',csv);
+}
+
+function downloadJSON(){
+  const payload={
+    export_time:new Date().toISOString(),
+    vehicle_id:'BUS-2034',trip_id:'2025-05-13_01',route:55,
+    current_state:{
+      timestamp_utc:Math.floor(Date.now()/1000),
+      vehicle_id:'BUS-2034',trip_id:1,
+      gps:{lat:live.lat,lon:live.lon,speed_kmh:live.spd},
+      environment:{
+        air_temp:{head:live.at,chest:+(live.at+.3).toFixed(1),legs:+(live.at+.5).toFixed(1)},
+        mrt:{head:+(live.mrt-.5).toFixed(1),chest:live.mrt},
+        co2_ppm:live.co2,pm25_ugm3:live.pm,rh_percent:Math.round(live.rh),solar_wm2:live.sol
+      },
+      vehicle:{door_state:'CLOSED',occupancy:live.occ,traction_power_kw:74.2},
+      diagnostics:{mqtt_connected:true,sensor_faults:[],watchdog_triggered:false}
+    },
+    time_series:chart.data.labels.map((t,i)=>({
+      time:t,
+      air_temp_C:chart.data.datasets[0].data[i],
+      mrt_C:chart.data.datasets[1].data[i],
+      rh_pct:chart.data.datasets[2].data[i],
+      co2_ppm:chart.data.datasets[3].data[i]!=null?(chart.data.datasets[3].data[i]*25).toFixed(0):null,
+    }))
+  };
+  triggerDownload('elbuss_BUS2034_'+Date.now()+'.json','application/json',JSON.stringify(payload,null,2));
+}
+
+function downloadDummyCSV(){
+  const hdrs=['segment','type','temperature_C'];
+  const rows=SEGS.map(s=>[s.l,s.t,s.b.toFixed(1)]);
+  triggerDownload('elbuss_dummy_'+Date.now()+'.csv','text/csv',[hdrs,...rows].map(r=>r.join(',')).join('\n'));
+}
+
+function printReport(){window.print();}
+function dlPrevTrip(id){alert('Fetching trip data for '+id+'\n(In production this would download from the TimescaleDB server)');}
+
+function triggerDownload(name,type,content){
+  const b=new Blob([content],{type});
+  const u=URL.createObjectURL(b);
+  const a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);
+  a.click();document.body.removeChild(a);URL.revokeObjectURL(u);
+}
+
+// ════════════════════════════════
+// DATA EXPLORER
+// ════════════════════════════════
+let deData=[], dePage_=0, deSort_={col:0,asc:false}, deFilter_='';
+const dePER=15;
+
+function buildDEData(){
+  deData=chart.data.labels.map((t,i)=>([
+    t,
+    chart.data.datasets[0].data[i]?.toFixed(1)??'–',
+    chart.data.datasets[1].data[i]?.toFixed(1)??'–',
+    chart.data.datasets[2].data[i]?.toFixed(0)??'–',
+    chart.data.datasets[3].data[i]!=null?(chart.data.datasets[3].data[i]*25).toFixed(0):'–',
+    chart.data.datasets[4].data[i]?.toFixed(1)??'–',
+    chart.data.datasets[5].data[i]!=null?(chart.data.datasets[5].data[i]*15).toFixed(0):'–',
+    chart.data.datasets[6].data[i]?.toFixed(0)??'–',
+    chart.data.datasets[8].data[i]?.toFixed(1)??'–',
+  ]));
+}
+
+function renderDE(){
+  buildDEData();
+  let rows=[...deData];
+  if(deFilter_) rows=rows.filter(r=>r.some(v=>String(v).toLowerCase().includes(deFilter_.toLowerCase())));
+  rows.sort((a,b)=>{
+    const va=isNaN(a[deSort_.col])?a[deSort_.col]:+a[deSort_.col];
+    const vb=isNaN(b[deSort_.col])?b[deSort_.col]:+b[deSort_.col];
+    return deSort_.asc?(va>vb?1:-1):(va<vb?1:-1);
+  });
+  const pages=Math.ceil(rows.length/dePER)||1;
+  const slice=rows.slice(dePage_*dePER,(dePage_+1)*dePER);
+  document.getElementById('deCnt').textContent=rows.length+' records';
+  document.getElementById('dePageInfo').textContent=`Page ${dePage_+1} / ${pages}`;
+  document.getElementById('deTbody').innerHTML=slice.map(r=>`<tr>
+    <td>${r[0]}</td>
+    <td class="${+r[1]>25.5?'temp-hi':''}">${r[1]}</td>
+    <td class="${+r[2]>30?'temp-hi':''}">${r[2]}</td>
+    <td>${r[3]}</td>
+    <td class="${+r[4]>900?'co2-hi':''}">${r[4]}</td>
+    <td>${r[5]}</td><td>${r[6]}</td><td>${r[7]}</td><td>${r[8]}</td>
+  </tr>`).join('');
+}
+
+function openDE(){
+  dePage_=0;deFilter_='';
+  document.getElementById('deSearch').value='';
+  document.getElementById('deOverlay').classList.add('open');
+  renderDE();
+}
+function closeDE(){document.getElementById('deOverlay').classList.remove('open');}
+function filterDE(){deFilter_=document.getElementById('deSearch').value;dePage_=0;renderDE();}
+function sortDE(col){
+  if(deSort_.col===col) deSort_.asc=!deSort_.asc;
+  else{deSort_.col=col;deSort_.asc=true;}
+  renderDE();
+}
+function dePage(d){
+  buildDEData();
+  const pages=Math.ceil(deData.length/dePER)||1;
+  dePage_=Math.max(0,Math.min(pages-1,dePage_+d));
+  renderDE();
+}
+
+// ════════════════════════════════
+// NOTIFICATIONS
+// ════════════════════════════════
+function toggleNotif(){
+  const p=document.getElementById('notifPanel');
+  p.classList.toggle('open');
+}
+function clearNotifs(){
+  document.getElementById('notifPanel').querySelector('.np-list').innerHTML=
+    '<div style="padding:16px;text-align:center;color:var(--mu);font-size:11px">No new notifications</div>';
+  document.getElementById('notifBtn').removeAttribute('data-n');
+  document.getElementById('notifPanel').classList.remove('open');
+}
+document.addEventListener('click',e=>{
+  const p=document.getElementById('notifPanel');
+  if(!p.contains(e.target)&&e.target.id!=='notifBtn') p.classList.remove('open');
+});
+
+// ════════════════════════════════
+// VIEW TOGGLE
+// ════════════════════════════════
+function switchView(v){
+  document.getElementById('viewTop').style.display=v==='top'?'block':'none';
+  document.getElementById('viewSide').style.display=v==='side'?'block':'none';
+  document.getElementById('tabTop').classList.toggle('active',v==='top');
+  document.getElementById('tabSide').classList.toggle('active',v==='side');
+}
+function dTab(el,i){document.querySelectorAll('.dtab').forEach((t,j)=>t.classList.toggle('active',j===i));}
+function dvTab(el,i){
+  document.querySelectorAll('#v-dummy .dtab').forEach((t,j)=>t.classList.toggle('active',j===i));
+  const col=document.getElementById('dvDataCol');
+  if(!col) return;
+  if(i===0) renderDummyFull();
+  else renderThermalComfort();
+}
+// ════════════════════════════════
+// FULL MAP VIEW
+// ════════════════════════════════
+let fullMap, fullBusMarker, fullMapInited=false;
+function initFullMap(){
+  if(fullMapInited) return;
+  fullMapInited=true;
+  const busRoute=[[59.312,18.053],[59.320,18.058],[59.330,18.062],[59.340,18.068],[59.3498,18.0686],[59.360,18.074],[59.370,18.083]];
+  const stops=[
+    {ll:[59.312,18.053],name:'Gullmarsplan'},
+    {ll:[59.330,18.062],name:'Skanstull'},
+    {ll:[59.3498,18.0686],name:'Medborgarplatsen'},
+    {ll:[59.360,18.074],name:'Stureplan'},
+    {ll:[59.370,18.083],name:'Odenplan'}
+  ];
+  fullMap=L.map('fullMap',{center:[59.3498,18.0686],zoom:13,zoomControl:true,scrollWheelZoom:true});
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(fullMap);
+  L.polyline(busRoute,{color:'#004B87',weight:4,opacity:.8,dashArray:'8,5'}).addTo(fullMap);
+  stops.forEach(s=>{
+    L.circleMarker(s.ll,{radius:6,color:'#004B87',fillColor:'#fff',fillOpacity:1,weight:2})
+      .bindPopup(`<b>${s.name}</b><br>Route 55`).addTo(fullMap);
+  });
+  const busIcon=L.divIcon({html:`<div class="bus-marker-icon">🚌</div>`,className:'',iconSize:[26,26],iconAnchor:[13,13]});
+  fullBusMarker=L.marker([59.3498,18.0686],{icon:busIcon,title:'BUS-2034'}).addTo(fullMap);
+  fullBusMarker.bindPopup('<b>BUS-2034</b><br>Route 55').openPopup();
+  setTimeout(()=>fullMap.invalidateSize(),350);
+  fetchWeather(59.3498,18.0686);
+}
+// ════════════════════════════════
+// WEATHER (Open-Meteo, free, no key)
+// ════════════════════════════════
+const WMO={0:'☀️',1:'🌤',2:'⛅',3:'☁️',45:'🌫',48:'🌫',51:'🌦',53:'🌦',55:'🌧',
+  61:'🌧',63:'🌧',65:'🌧',71:'🌨',73:'🌨',75:'❄️',77:'🌨',
+  80:'🌦',81:'🌧',82:'⛈',85:'🌨',86:'❄️',95:'⛈',96:'⛈',99:'⛈'};
+const WMO_DESC={0:'Clear sky',1:'Mainly clear',2:'Partly cloudy',3:'Overcast',
+  45:'Fog',48:'Icy fog',51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',
+  61:'Light rain',63:'Rain',65:'Heavy rain',71:'Light snow',73:'Snow',75:'Heavy snow',
+  77:'Snow grains',80:'Rain showers',81:'Showers',82:'Heavy showers',
+  85:'Snow showers',86:'Heavy snow showers',95:'Thunderstorm',96:'Thunderstorm+hail',99:'Severe thunderstorm'};
+async function fetchWeather(lat,lon){
+  const card=document.getElementById('wxCard');
+  if(!card) return;
+  try{
+    const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m&hourly=temperature_2m,weather_code,precipitation_probability&timezone=Europe%2FStockholm&forecast_days=1`;
+    const res=await fetch(url);
+    const d=await res.json();
+    const c=d.current;
+    const ic=WMO[c.weather_code]||'🌡';
+    const desc=WMO_DESC[c.weather_code]||'Unknown';
+    const wdDir=['N','NE','E','SE','S','SW','W','NW'][Math.round(c.wind_direction_10m/45)%8];
+    // Hourly strip — next 12 hours
+    const now=new Date();
+    const nowH=now.getUTCHours();
+    const hrs=d.hourly.time.map((t,i)=>({
+      t,h:parseInt(t.split('T')[1]),
+      temp:d.hourly.temperature_2m[i],
+      wc:d.hourly.weather_code[i],
+      pp:d.hourly.precipitation_probability[i]
+    })).filter(x=>x.h>=nowH).slice(0,12);
+    card.innerHTML=`
+      <div class="wx-now">
+        <div class="wx-icon">${ic}</div>
+        <div>
+          <div class="wx-temp">${c.temperature_2m.toFixed(1)}°C</div>
+          <div class="wx-desc">${desc}</div>
+          <div class="wx-meta">Feels like ${c.apparent_temperature.toFixed(1)}°C</div>
+        </div>
+      </div>
+      <div class="wx-extra">
+        <div class="wx-ex"><div class="wx-ek">Humidity</div><div class="wx-ev">${c.relative_humidity_2m}%</div></div>
+        <div class="wx-ex"><div class="wx-ek">Wind</div><div class="wx-ev">${c.wind_speed_10m} km/h ${wdDir}</div></div>
+      </div>
+      <div class="wx-forecast">
+        <div class="wx-fc-title">Hourly Forecast</div>
+        <div class="wx-fc-strip">
+          ${hrs.map(x=>`<div class="wx-fc-item">
+            <div class="wx-fc-hr">${String(x.h).padStart(2,'0')}:00</div>
+            <div class="wx-fc-ic">${WMO[x.wc]||'🌡'}</div>
+            <div class="wx-fc-t">${x.temp.toFixed(0)}°</div>
+            <div class="wx-fc-pp">${x.pp}%💧</div>
+          </div>`).join('')}
+        </div>
+      </div>`;
+  }catch(e){
+    card.innerHTML=`<div class="wx-loading">Weather unavailable</div>`;
+  }
+}
+// ════════════════════════════════
+// THERMAL DUMMY FULL VIEW
+// ════════════════════════════════
+function renderDummyFull(){
+  const col=document.getElementById('dvDataCol');
+  if(!col) return;
+  const segs=SEGS.map(s=>({...s,v:+(s.b+(Math.random()-.5)*.35).toFixed(1)}));
+  col.innerHTML=`
+    <div class="dv-section-title">Body Segment Temperatures (°C)</div>
+    <div class="dv-grid">
+      ${segs.map(s=>`<div class="dv-seg-card">
+        <div class="dv-sc-dot" style="background:${tCol(s.v)}"></div>
+        <div class="dv-sc-info">
+          <div class="dv-sc-name">${s.l}</div>
+          <div><span class="dv-sc-val">${s.v}</span><span class="dv-sc-unit"> °C</span></div>
+        </div>
+      </div>`).join('')}
+    </div>`;
+  renderManikinDots('manikinDotsLg',12);
+}
+function renderThermalComfort(){
+  const col=document.getElementById('dvDataCol');
+  if(!col) return;
+  const pmv=+(((live.at-22)/8)+(live.rh-50)/200+(live.mrt-live.at)/15).toFixed(2);
+  const ppd=Math.min(100,Math.round(100-95*Math.exp(-0.03353*Math.pow(pmv,4)-0.2179*Math.pow(pmv,2))));
+  const sensation=['Cold','Cool','Slightly Cool','Neutral','Slightly Warm','Warm','Hot'];
+  const sensIdx=Math.min(6,Math.max(0,Math.round(pmv+3)));
+  col.innerHTML=`
+    <div class="dv-section-title">ISO 7730 Thermal Comfort Indices</div>
+    <div class="dv-pmv">
+      <div class="dv-pmv-card">
+        <div class="dv-pmv-lbl">PMV</div>
+        <div class="dv-pmv-val" style="color:${Math.abs(pmv)<0.5?'var(--live)':Math.abs(pmv)<1?'var(--warn)':'var(--err)'}">${pmv>0?'+':''}${pmv}</div>
+        <div class="dv-pmv-sub">−3 to +3 scale</div>
+      </div>
+      <div class="dv-pmv-card">
+        <div class="dv-pmv-lbl">PPD</div>
+        <div class="dv-pmv-val" style="color:${ppd<10?'var(--live)':ppd<20?'var(--warn)':'var(--err)'}">${ppd}%</div>
+        <div class="dv-pmv-sub">% dissatisfied</div>
+      </div>
+      <div class="dv-pmv-card">
+        <div class="dv-pmv-lbl">Sensation</div>
+        <div class="dv-pmv-val" style="font-size:13px;color:var(--kth)">${sensation[sensIdx]}</div>
+        <div class="dv-pmv-sub">ASHRAE 55</div>
+      </div>
+    </div>
+    <div class="dv-section-title" style="margin-top:10px">Environmental Inputs</div>
+    <div class="dv-grid">
+      <div class="dv-seg-card"><div class="dv-sc-dot" style="background:#F44336"></div><div class="dv-sc-info"><div class="dv-sc-name">Air Temp.</div><div><span class="dv-sc-val">${live.at.toFixed(1)}</span><span class="dv-sc-unit"> °C</span></div></div></div>
+      <div class="dv-seg-card"><div class="dv-sc-dot" style="background:#FF7043"></div><div class="dv-sc-info"><div class="dv-sc-name">MRT</div><div><span class="dv-sc-val">${live.mrt.toFixed(1)}</span><span class="dv-sc-unit"> °C</span></div></div></div>
+      <div class="dv-seg-card"><div class="dv-sc-dot" style="background:#2196F3"></div><div class="dv-sc-info"><div class="dv-sc-name">Rel. Humidity</div><div><span class="dv-sc-val">${Math.round(live.rh)}</span><span class="dv-sc-unit"> %</span></div></div></div>
+      <div class="dv-seg-card"><div class="dv-sc-dot" style="background:#9C27B0"></div><div class="dv-sc-info"><div class="dv-sc-name">CO₂</div><div><span class="dv-sc-val">${live.co2}</span><span class="dv-sc-unit"> ppm</span></div></div></div>
+      <div class="dv-seg-card"><div class="dv-sc-dot" style="background:#00BCD4"></div><div class="dv-sc-info"><div class="dv-sc-name">PM2.5</div><div><span class="dv-sc-val">${live.pm.toFixed(1)}</span><span class="dv-sc-unit"> μg/m³</span></div></div></div>
+      <div class="dv-seg-card"><div class="dv-sc-dot" style="background:#8BC34A"></div><div class="dv-sc-info"><div class="dv-sc-name">Solar Irr.</div><div><span class="dv-sc-val">${live.sol}</span><span class="dv-sc-unit"> W/m²</span></div></div></div>
+    </div>`;
+}
+
+function navClick(el,view){
+  document.querySelectorAll('.nitem').forEach(n=>n.classList.remove('active'));
+  el.classList.add('active');
+  ['dash','map','dummy','graphs'].forEach(v=>{
+    const p=document.getElementById('v-'+v);
+    if(p) p.classList.toggle('active', v===view);
+  });
+  if(view==='map'){
+    if(!fullMapInited) initFullMap();
+    else setTimeout(()=>fullMap&&fullMap.invalidateSize(),200);
+  }
+  if(view==='dummy') renderDummyFull();
+  if(view==='graphs') initGraphsView();
+}
+// ════════════════════════════════════════════════
+// SAVE CHART AS PNG
+// ════════════════════════════════════════════════
+function saveChartPng(canvasId, filename){
+  const canvas=document.getElementById(canvasId);
+  if(!canvas) return;
+  // Draw on white background then download
+  const out=document.createElement('canvas');
+  out.width=canvas.width; out.height=canvas.height;
+  const ctx=out.getContext('2d');
+  ctx.fillStyle='#ffffff';
+  ctx.fillRect(0,0,out.width,out.height);
+  ctx.drawImage(canvas,0,0);
+  const a=document.createElement('a');
+  a.href=out.toDataURL('image/png');
+  a.download=filename+'_'+new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')+'.png';
+  a.click();
+}
+function saveSvgPng(svgId, filename){
+  const svg=document.getElementById(svgId);
+  if(!svg) return;
+  const vb=svg.getAttribute('viewBox')||'0 0 500 280';
+  const [,, vw, vh]=vb.split(' ').map(Number);
+  const svgData=new XMLSerializer().serializeToString(svg);
+  const blob=new Blob([svgData],{type:'image/svg+xml;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const img=new Image();
+  img.onload=()=>{
+    const canvas=document.createElement('canvas');
+    canvas.width=vw*2; canvas.height=vh*2; // 2× for crisp export
+    const ctx=canvas.getContext('2d');
+    ctx.fillStyle='#ffffff';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(img,0,0,canvas.width,canvas.height);
+    URL.revokeObjectURL(url);
+    const a=document.createElement('a');
+    a.href=canvas.toDataURL('image/png');
+    a.download=filename+'_'+new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')+'.png';
+    a.click();
+  };
+  img.src=url;
+}
+
+// ════════════════════════════════════════════════
+// GRAPHS VIEW
+// ════════════════════════════════════════════════
+// Multipliers to undo the /25 and /15 scaling stored in chart.data
+const GV_VARS=[
+  {label:'Air Temp.',unit:'°C',  color:'#F44336',mult:1,  ds:0},
+  {label:'MRT',      unit:'°C',  color:'#FF7043',mult:1,  ds:1},
+  {label:'RH',       unit:'%',   color:'#2196F3',mult:1,  ds:2},
+  {label:'CO₂',      unit:'ppm', color:'#9C27B0',mult:25, ds:3},
+  {label:'PM2.5',    unit:'μg/m³',color:'#00BCD4',mult:1, ds:4},
+  {label:'Solar',    unit:'W/m²',color:'#8BC34A',mult:15, ds:5},
+  {label:'Occupancy',unit:'pax', color:'#1A237E',mult:1,  ds:6},
+  {label:'Door',     unit:'',    color:'#607D8B',mult:1,  ds:7},
+  {label:'HVAC kW',  unit:'kW',  color:'#FF9800',mult:1,  ds:8},
+];
+
+let gvBusChartInst=null, gvHistInst=null, gvDummyChartInst=null;
+let gvDummyHistInst=null, gvScatterInst=null;
+let gvDummyHistory=[];  // rolling dummy time-series data
+
+function setupGvHover(){
+  const gvEl=document.querySelector('.gv');
+  document.querySelectorAll('.gv-zoom').forEach(card=>{
+    card.addEventListener('mouseenter',()=>{
+      if(gvEl) gvEl.style.overflow='visible';
+    });
+    card.addEventListener('mouseleave',()=>{
+      if(gvEl) gvEl.style.overflow='';
+    });
+  });
+}
+function initGraphsView(){
+  setupGvHover();
+  // Build dummy history if empty
+  if(gvDummyHistory.length===0){
+    const N=30;
+    for(let i=0;i<N;i++){
+      const t=new Date(Date.now()-(N-i)*3000);
+      const row={time:t.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),
+        vals:SEGS.map(s=>+(s.b+(Math.random()-.5)*.5).toFixed(1))};
+      gvDummyHistory.push(row);
+    }
+  }
+  renderGvBusChart();
+  renderGvHist();
+  renderGvDummyChart();
+  renderGvDummyHist();
+  renderSankey();
+  renderScatter();
+}
+
+// ── 1. Bus time series (mini version) ──
+function renderGvBusChart(){
+  const canvas=document.getElementById('gvBusChart');
+  if(!canvas) return;
+  // Size canvas to parent
+  const wrap=canvas.parentElement;
+  canvas.style.height=(wrap.offsetHeight-10)+'px';
+  if(gvBusChartInst){gvBusChartInst.destroy();gvBusChartInst=null;}
+  const labels=[...chart.data.labels];
+  const datasets=GV_VARS.filter(v=>v.ds!==7).map(v=>({
+    label:v.label,
+    data:chart.data.datasets[v.ds].data.map(x=>x===null?null:+(x*v.mult).toFixed(2)),
+    borderColor:v.color,backgroundColor:v.color+'22',
+    borderWidth:1.5,pointRadius:0,tension:.3,
+    yAxisID:v.ds>=6?'yR':'yL'
+  }));
+  gvBusChartInst=new Chart(canvas,{type:'line',data:{labels,datasets},options:{
+    responsive:true,maintainAspectRatio:false,
+    animation:false,
+    interaction:{mode:'index',intersect:false},
+    plugins:{legend:{display:true,position:'top',labels:{boxWidth:8,font:{size:8},padding:6}},tooltip:{enabled:true}},
+    scales:{
+      yL:{type:'linear',position:'left',ticks:{font:{size:8},color:'#64748B'},grid:{color:'#F1F5F9'},title:{display:false}},
+      yR:{type:'linear',position:'right',ticks:{font:{size:8},color:'#64748B'},grid:{display:false},title:{display:false}},
+      x:{ticks:{font:{size:8},color:'#64748B',maxTicksLimit:8},grid:{display:false}}
+    }
+  }});
+}
+
+// ── 2. Histogram for a selected bus variable ──
+function renderGvHist(){
+  const canvas=document.getElementById('gvHistChart');
+  if(!canvas) return;
+  const sel=parseInt(document.getElementById('gvHistSel').value);
+  const v=GV_VARS.find(x=>x.ds===sel)||GV_VARS[0];
+  const raw=chart.data.datasets[v.ds].data.filter(x=>x!==null).map(x=>+(x*v.mult).toFixed(2));
+  const {bins,counts}=histogram(raw,12);
+  if(gvHistInst){gvHistInst.destroy();gvHistInst=null;}
+  gvHistInst=new Chart(canvas,{type:'bar',data:{
+    labels:bins.map(b=>b.toFixed(1)),
+    datasets:[{label:v.label+' ('+v.unit+')',data:counts,
+      backgroundColor:v.color+'AA',borderColor:v.color,borderWidth:1}]
+  },options:{
+    responsive:true,maintainAspectRatio:false,animation:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{title:ls=>`~${ls[0]} ${v.unit}`,label:c=>`${c.raw} readings`}}},
+    scales:{
+      x:{title:{display:true,text:v.label+' ('+v.unit+')',font:{size:9}},ticks:{font:{size:8},maxTicksLimit:8}},
+      y:{title:{display:true,text:'Count',font:{size:9}},ticks:{font:{size:8}},grid:{color:'#F1F5F9'}}
+    }
+  }});
+}
+
+// ── 3. Dummy time series ──
+function renderGvDummyChart(){
+  const canvas=document.getElementById('gvDummyChart');
+  if(!canvas) return;
+  if(gvDummyChartInst){gvDummyChartInst.destroy();gvDummyChartInst=null;}
+  const labels=gvDummyHistory.map(r=>r.time);
+  const SEG_COLORS=['#F59E0B','#EF4444','#F97316','#EF4444','#F97316','#F97316','#3B82F6','#3B82F6','#60A5FA'];
+  const datasets=SEGS.map((s,i)=>({
+    label:s.l,
+    data:gvDummyHistory.map(r=>r.vals[i]),
+    borderColor:SEG_COLORS[i]||'#888',
+    borderWidth:1.5,pointRadius:0,tension:.3,
+    backgroundColor:'transparent'
+  }));
+  gvDummyChartInst=new Chart(canvas,{type:'line',data:{labels,datasets},options:{
+    responsive:true,maintainAspectRatio:false,animation:false,
+    interaction:{mode:'index',intersect:false},
+    plugins:{legend:{display:true,position:'top',labels:{boxWidth:8,font:{size:8},padding:5}}},
+    scales:{
+      y:{ticks:{font:{size:8},color:'#64748B'},grid:{color:'#F1F5F9'}},
+      x:{ticks:{font:{size:8},color:'#64748B',maxTicksLimit:8},grid:{display:false}}
+    }
+  }});
+}
+
+// ── 4. Histogram for a selected dummy segment ──
+function renderGvDummyHist(){
+  const canvas=document.getElementById('gvDummyHistChart');
+  if(!canvas) return;
+  const idx=parseInt(document.getElementById('gvDummyHistSel').value);
+  const seg=SEGS[idx]||SEGS[0];
+  const raw=gvDummyHistory.map(r=>r.vals[idx]);
+  const {bins,counts}=histogram(raw,10);
+  if(gvDummyHistInst){gvDummyHistInst.destroy();gvDummyHistInst=null;}
+  const SEG_COLORS=['#F59E0B','#EF4444','#F97316','#EF4444','#F97316','#F97316','#3B82F6','#3B82F6','#60A5FA'];
+  const col=SEG_COLORS[idx]||'#888';
+  gvDummyHistInst=new Chart(canvas,{type:'bar',data:{
+    labels:bins.map(b=>b.toFixed(1)),
+    datasets:[{label:seg.l+' (°C)',data:counts,backgroundColor:col+'AA',borderColor:col,borderWidth:1}]
+  },options:{
+    responsive:true,maintainAspectRatio:false,animation:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{title:ls=>`~${ls[0]}°C`,label:c=>`${c.raw} readings`}}},
+    scales:{
+      x:{title:{display:true,text:seg.l+' (°C)',font:{size:9}},ticks:{font:{size:8},maxTicksLimit:8}},
+      y:{title:{display:true,text:'Count',font:{size:9}},ticks:{font:{size:8}},grid:{color:'#F1F5F9'}}
+    }
+  }});
+}
+
+// ── Histogram helper ──
+function histogram(data,nBins){
+  if(!data.length) return {bins:[],counts:[]};
+  const mn=Math.min(...data), mx=Math.max(...data);
+  const step=(mx-mn)/nBins||1;
+  const bins=Array.from({length:nBins},(_,i)=>+(mn+i*step).toFixed(2));
+  const counts=Array(nBins).fill(0);
+  data.forEach(v=>{
+    let i=Math.floor((v-mn)/step);
+    if(i>=nBins) i=nBins-1;
+    counts[i]++;
+  });
+  return {bins,counts};
+}
+
+// ── 5. Sankey ──
+function renderSankey(){
+  const svg=document.getElementById('sankeySvg');
+  if(!svg) return;
+  const hvac=live.hvac||7.2;
+  const total=48;
+  const flows=[
+    // [from, to, kW, color]
+    {from:'Battery',to:'Power Electronics',kw:total,    col:'#1565C0'},
+    {from:'Regen',  to:'Power Electronics',kw:4.8,     col:'#43A047'},
+    {from:'Power Electronics',to:'Motor Drive',kw:32,  col:'#0288D1'},
+    {from:'Power Electronics',to:'HVAC',       kw:hvac,col:'#F57C00'},
+    {from:'Power Electronics',to:'Auxiliary',  kw:2.4, col:'#7B1FA2'},
+    {from:'Power Electronics',to:'Losses',     kw:total+4.8-32-hvac-2.4,col:'#9E9E9E'},
+    {from:'Motor Drive',to:'Wheels',           kw:27.2,col:'#0097A7'},
+    {from:'Motor Drive',to:'Motor Losses',     kw:4.8, col:'#9E9E9E'},
+  ];
+  const nodes={
+    'Battery':          {x:20, y:60,  h:0,col:'#1565C0'},
+    'Regen':            {x:20, y:180, h:0,col:'#43A047'},
+    'Power Electronics':{x:180,y:80, h:0,col:'#0277BD'},
+    'Motor Drive':      {x:330,y:60, h:0,col:'#0288D1'},
+    'HVAC':             {x:430,y:130,h:0,col:'#F57C00'},
+    'Auxiliary':        {x:430,y:175,h:0,col:'#7B1FA2'},
+    'Losses':           {x:430,y:215,h:0,col:'#9E9E9E'},
+    'Wheels':           {x:430,y:40, h:0,col:'#0097A7'},
+    'Motor Losses':     {x:430,y:90, h:0,col:'#9E9E9E'},
+  };
+  const NODE_W=60, MIN_H=6, SCALE=2.8;
+  // compute node heights from total kW passing through
+  const inFlow={};
+  flows.forEach(f=>{
+    inFlow[f.to]=(inFlow[f.to]||0)+f.kw;
+  });
+  Object.keys(nodes).forEach(n=>{
+    nodes[n].h=Math.max(MIN_H,(inFlow[n]||total)*SCALE);
+  });
+  // Offsets for stacking flows at each node
+  const outOff={}, inOff2={};
+  Object.keys(nodes).forEach(n=>{outOff[n]=0;inOff2[n]=0;});
+  let html='';
+  // Draw flows
+  flows.forEach(f=>{
+    const fn=nodes[f.from], tn=nodes[f.to];
+    if(!fn||!tn) return;
+    const fh=Math.max(MIN_H,f.kw*SCALE);
+    const fy=fn.y+outOff[f.from];
+    const ty=tn.y+inOff2[f.to];
+    outOff[f.from]+=fh;
+    inOff2[f.to]+=fh;
+    const x1=fn.x+NODE_W, y1=fy+fh/2;
+    const x2=tn.x,         y2=ty+fh/2;
+    const cx=(x1+x2)/2;
+    html+=`<path d="M${x1},${fy} C${cx},${fy} ${cx},${ty} ${x2},${ty} L${x2},${ty+fh} C${cx},${ty+fh} ${cx},${fy+fh} ${x1},${fy+fh} Z"
+      fill="${f.col}" opacity="0.35" stroke="${f.col}" stroke-width="0.5"/>`;
+  });
+  // Draw nodes
+  Object.entries(nodes).forEach(([name,n])=>{
+    html+=`<rect x="${n.x}" y="${n.y}" width="${NODE_W}" height="${n.h}" rx="3" fill="${n.col}"/>`;
+    const lx=n.x<250?n.x+NODE_W+4:n.x-4;
+    const anchor=n.x<250?'start':'end';
+    const kw=inFlow[name]||total;
+    html+=`<text x="${lx}" y="${n.y+n.h/2+1}" text-anchor="${anchor}" font-size="8.5" fill="#374151" font-family="Segoe UI,sans-serif">${name}</text>`;
+    html+=`<text x="${lx}" y="${n.y+n.h/2+11}" text-anchor="${anchor}" font-size="7.5" fill="#6B7280" font-family="Segoe UI,sans-serif">${kw.toFixed(1)} kW</text>`;
+  });
+  svg.innerHTML=html;
+  document.getElementById('sankeyKw').textContent=`Total: ${total} kW · HVAC: ${hvac} kW`;
+}
+
+// ── 6. XY Scatter ──
+function renderScatter(){
+  const canvas=document.getElementById('gvScatterChart');
+  if(!canvas) return;
+  const xi=parseInt(document.getElementById('scatX').value);
+  const yi=parseInt(document.getElementById('scatY').value);
+  const vx=GV_VARS.find(v=>v.ds===xi)||GV_VARS[0];
+  const vy=GV_VARS.find(v=>v.ds===yi)||GV_VARS[1];
+  const rawX=chart.data.datasets[vx.ds].data.map(x=>x===null?null:+(x*vx.mult).toFixed(2));
+  const rawY=chart.data.datasets[vy.ds].data.map(x=>x===null?null:+(x*vy.mult).toFixed(2));
+  const pts=rawX.map((x,i)=>x!==null&&rawY[i]!==null?{x,y:rawY[i]}:null).filter(Boolean);
+  if(gvScatterInst){gvScatterInst.destroy();gvScatterInst=null;}
+  gvScatterInst=new Chart(canvas,{type:'scatter',data:{
+    datasets:[{label:`${vx.label} vs ${vy.label}`,data:pts,
+      backgroundColor:vx.color+'99',borderColor:vx.color,
+      pointRadius:3,pointHoverRadius:5}]
+  },options:{
+    responsive:true,maintainAspectRatio:false,animation:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{
+      label:c=>`${vx.label}: ${c.parsed.x} ${vx.unit} | ${vy.label}: ${c.parsed.y} ${vy.unit}`
+    }}},
+    scales:{
+      x:{title:{display:true,text:`${vx.label} (${vx.unit})`,font:{size:9}},
+        ticks:{font:{size:8}},grid:{color:'#F1F5F9'}},
+      y:{title:{display:true,text:`${vy.label} (${vy.unit})`,font:{size:9}},
+        ticks:{font:{size:8}},grid:{color:'#F1F5F9'}}
+    }
+  }});
+}
+</script>
+</body>
+</html>
