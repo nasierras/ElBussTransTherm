@@ -55,7 +55,7 @@ This node tracks cabin relative humidity, globe temperature, and door-open/close
 This node instruments the ISO 15831-inspired thermal dummy used to emulate passenger presence and measure the actual thermal environment at the body surface, rather than inferring it from ambient cabin sensors alone. Unlike a fully compliant thermal manikin, this is a simplified surrogate, modeled loosely on the ISO 15831 body-zone framework but not built or validated to its full specification. A 16-channel thermocouple array (multiplexed via an ADG726 into a MAX31856, with an RTD reference through a MAX31865) captures skin adjacent air temperature across head, torso, arms, and legs at ISO-inspired body zones; three TPRS-BB add globe temperature at head, chest, and feet; an HIH-4000 measures humidity at the head; and eight PAV1005V sensors (four X/Y pairs at head, neck, and feet, plus two auxiliary channels) capture localized air velocity. All analog channels read through three ADS1115 ADCs addressed separately over I2C. An ESP32-S3 (T-ETH-Lite) samples the full array at 1Hz, checks both I2C faults and MAX31856/MAX31865 hardware fault registers independent of network state, and publishes the surface dataset as JSON over MQTT via wired Ethernet, providing body-zone resolved thermal comfort data that the dummy's own heater control (WP2.TM) uses as its feedback loop, and that the project uses to approximate passenger-level comfort conditions without the cost and complexity of a fully ISO-compliant manikin.
 
 <p align="center">
-  <img src="img_01/WP26.png" alt="WP26" width="860">
+  <img src="img_01/WP26.png" alt="WP26" width="500">
 </p>
 
 #### WP2.TM: Thermal Dummy Heater-Pad Control Node
