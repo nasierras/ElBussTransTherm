@@ -59,4 +59,4 @@ Where the integrated data flow for the platform should be something like:
   <img src="img_01/Field_Measurement.png" alt="NodesComplete" width="920">
 </p>
 
-[![Preview of the 3D model](model-preview.gif)](link-to-the-3D-file.stl)
+[![Preview of the 3D model](WP21i.gif)](link-to-the-3D-file.stl)
