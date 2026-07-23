@@ -1,21 +1,7 @@
 # ElBussTransTherm
-*ElBussTransTherm* is a Swedish research project funded by the Swedish Energy Agency (Energimyndigheten) that investigates how the energy used for heating, ventilation, and air conditioning (HVAC) in electric buses interacts with battery performance and passenger comfort.
+*ElBussTransTherm* is a Swedish research project funded by the Swedish Energy Agency (Energimyndigheten) in colaboration with KTH and Nobina that investigates how the energy used for heating, ventilation, and air conditioning (HVAC) in electric buses interacts with battery performance and passenger comfort.
 
 ## Main Objective
-The primary objective is to develop operational strategies that minimize auxiliary energy consumption without compromising comfort.
-
-## Core Areas of Focus
-### Climate and Comfort: 
-Analyzing how thermal comfort is perceived during various weather conditions in urban transit.
-### Battery Management: 
-Evaluating the link between powertrain thermal management and the cabin's heating or cooling needs.
-### Field Studies & Guidelines: 
-Conducting real-world tests, passenger surveys, and simulations to create actionable guidelines for bus manufacturers and public transport operators.
-
-## Context and Impact
-The project is highly relevant as cities scale up the electrification of public transport to reduce reliance on biofuels. By collaborating with public transport authorities (such as SL in the Stockholm region) and operators, the research helps identify specific measures to optimize fleet efficiency, especially during harsh winter conditions where heating demands can significantly drain battery capacity.
-
-## PhD Main Objective
 The project investigates the relationship between passenger thermal comfort, drivetrain and battery thermal management, and energy consumption for heating/cooling in electric city buses. The goal is to minimize energy  consumption for electric buses in public transport through optimization of climate strategies and operational  strategies. Through field studies, simulations, passenger surveys, and pilot studies, guidelines for operators and manufacturers are developed. Specifically, the project can, together with the Traffic Administration and Operators, identify strategies and measures that can enhance the value of conducted Energy Audits. The project is expected to contribute to increased energy efficiency and accelerate the transition to sustainable public transport, in line with the call's aim to promote applicable solutions for the transport system's energy transition.
 
 ## Main Research question:
