@@ -1,0 +1,15 @@
+{
+  "cmake.sourceDirectory": "C:/Users/nsierra/Downloads/ElBussTransTherm_testing/WP2/WP21i/main",
+  "idf.currentSetup": "C:\\esp\\v6.0.1\\esp-idf",
+  "idf.customExtraVars": {},
+  "clangd.path": "C:\\Espressif\\tools\\esp-clang\\16.0.1-fe4f10a809\\esp-clang\\bin\\clangd.exe",
+  "clangd.arguments": [
+    "--background-index",
+    "--query-driver=**",
+    "--compile-commands-dir=c:\\Users\\nsierra\\Downloads\\ElBussTransTherm_testing\\build"
+  ],
+  "idf.openOcdConfigs": [
+    "board/esp32s3-bridge.cfg"
+  ],
+  "idf.portWin": "COM9"
+}
