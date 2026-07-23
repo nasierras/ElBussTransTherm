@@ -65,7 +65,7 @@ This node drives the active heating side of the thermal dummy, maintaining its 1
 Unlike the ESP32-based sensor nodes, WP2.5 is the project's central hub: a Raspberry Pi 5 fitted with a 2-channel CAN-HAT tapped into the bus's FMS connector, and a SIM7600G-H 4G module providing both cellular uplink and GPS positioning. On the CAN side, it captures vehicle-level operational data — SoC (state-of-Charge), HVAC/powertrain/auxiliary energy split, regenerative braking energy, fuel-heater runtime, and remaining electric range, giving the project the energy-consumption context needed to relate cabin climate strategy to actual drivetrain and battery load. GPS from the SIM7600 supplies location, speed, and route context (feeding trip-type classification: city/feeder/commuter), while the same cellular link is dedicated solely to pushing the aggregated dataset onward, with no need for the sensor-side Ethernet LAN to reach the internet at all. The Raspberry-Pi also runs Mosquitto as the local MQTT broker for every WP2.x ESP32 nodes, and a Python-based aggregator subscribes to all their topics, merges them with the CAN and GPS data into the project's unified JSON schema, and republishes a single coherent per-trip record, making WP2.5 the point where all of WP2's distributed thermal, air-quality, and comfort measurements converge with the vehicle's own operating state.
 
 <p align="center">
-  <img src="img_01/WP25i.png" alt="WP25" width="860">
+  <img src="img_01/WP25i.png" alt="WP25" width="920">
 </p>
 
 Where the integrated data flow for the platform should be something like:
