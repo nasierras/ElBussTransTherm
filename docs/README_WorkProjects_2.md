@@ -3,12 +3,12 @@
 
 Testing of the 3Ds:
 
-![WP21i](img_01/WP21i.gif)
+![WP21i](WorkProjects_2_img/WP21i.gif)
 
-![WP21i](img_01/WP22i.gif)
+![WP21i](WorkProjects_2_img/WP22i.gif)
 
-![WP21i](img_01/WP23i.gif)
+![WP21i](WorkProjects_2_img/WP23i.gif)
 
-![WP21i](img_01/WP25i.gif)
+![WP21i](WorkProjects_2_img/WP25i.gif)
 
-![WP21i](img_01/WP2TMi.gif)
+![WP21i](WorkProjects_2_img/WP2TMi.gif)
