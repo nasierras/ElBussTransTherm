@@ -59,9 +59,14 @@ Where the integrated data flow for the platform should be something like:
   <img src="img_01/Field_Measurement.png" alt="NodesComplete" width="920">
 </p>
 
-Testing of the 3D:
+Testing of the 3Ds:
 
 ![WP21i](img_01/WP21i.gif)
 
-https://ezgif.com/video-to-gif/
+![WP21i](img_01/WP22i.gif)
 
+![WP21i](img_01/WP23i.gif)
+
+![WP21i](img_01/WP25i.gif)
+
+![WP21i](img_01/WP2TMi.gif)
