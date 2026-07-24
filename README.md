@@ -59,6 +59,8 @@ Where the integrated data flow for the platform should be something like:
   <img src="img_01/Field_Measurement.png" alt="NodesComplete" width="920">
 </p>
 
-More documents in this repository:
+More documents in the **ElBussTransTherm** repository:
+
 [See about State-of-the-Art (WP1)](./docs/WorkProjects_1.md)
+
 [See about WorkProjects 2 (WP2)](./docs/WorkProjects_2.md)
