@@ -61,6 +61,6 @@ Where the integrated data flow for the platform should be something like:
 
 More documents in the **ElBussTransTherm** repository:
 
-[See about State-of-the-Art (WP1)](./docs/WorkProjects_1.md)
+[See about State-of-the-Art (WP1)](./docs/README_WorkProjects_1.md)
 
-[See about WorkProjects 2 (WP2)](./docs/WorkProjects_2.md)
+[See about WorkProjects 2 (WP2)](./docs/README_WorkProjects_2.md)
