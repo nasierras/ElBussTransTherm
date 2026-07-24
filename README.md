@@ -59,4 +59,4 @@ Where the integrated data flow for the platform should be something like:
   <img src="img_01/Field_Measurement.png" alt="NodesComplete" width="920">
 </p>
 
-[See documents ab de Work Projects 2](./docs/WorkProjects_2.md)
+[See documents about de Work Projects 2](./docs/WorkProjects_2.md)
