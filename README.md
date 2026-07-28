@@ -56,7 +56,7 @@ Unlike the ESP32-based sensor nodes, WP2.5 is the project's central hub: a Raspb
 
 Where the integrated data flow for the platform should be something like:
 <p align="center">
-  <img src="img_01/Field_Measurement.png" alt="NodesComplete" width="920">
+  <img src="img_01/FieldMeasurement.png" alt="NodesComplete" width="920">
 </p>
 
 More documents in the **ElBussTransTherm** repository:
