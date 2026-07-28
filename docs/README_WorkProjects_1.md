@@ -1,4 +1,7 @@
 ## State of the Art: Thermal Management in Electric Public Transport
+
+[Return to main](./README.md)
+
 ### Electrification of Urban Transit and Energy Constraints
 ### Vehicular HVAC Systems and Heat Pump Integration
 ### Human Thermal Comfort in Transient and Localized Environments
