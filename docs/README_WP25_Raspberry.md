@@ -1,5 +1,10 @@
 # WP2.5.i Aggregator Stack (Dockerized)
 
+[Return to main](../README.md)
+
+> [!CAUTION]
+> To ensure full compatibility with the Raspberry-Pi CAN-hat by Waveshare, OS version must be one released on or before July 24, 2024.
+
 Central hub software stack for the ElBussTransTherm project (KTH PhD research on thermal comfort and energy consumption in electric urban buses). This Raspberry Pi sits at the center of one bus: ESP32-S3 sensor nodes (WP2.1.i-WP2.6.i, WP2.TM) publish sensor readings over MQTT, this stack aggregates them once per second into a single JSON record per vehicle/trip, stores it in a time-series database, and republishes the combined record for any downstream consumer.
 
 This directory is meant to be **copied as-is onto a fresh Raspberry Pi** (or any Debian-based aarch64/amd64 host) to bring the whole application stack up with one command. It replaces a previous bare-metal install (native Mosquitto + native PostgreSQL/TimescaleDB + a systemd unit running the aggregator) with three Docker containers, so a reinstall no longer means re-discovering the same handful of gotchas from scratch.

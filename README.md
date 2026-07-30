@@ -12,7 +12,7 @@ How can thermal management and operational strategies be optimized to reduce tot
 This includes vehicle speed, cumulated energy consumption, HVAC power drawn, HVAC setpoints and output state, ambient temperature, passenger occupancy (APC-Automatic Passenger Counting), door states and state of charge (SoC).
 
 <p align="center">
-  <img src="img_01/MainArchitecture.png" alt="MainArchitecture" width="860">
+  <img src="img_01/Main_Architecture.png" alt="Main_Architecture" width="860">
 </p>
 
 ## ElBussTransTherm Sensor Grid:
@@ -56,7 +56,7 @@ Unlike the ESP32-based sensor nodes, WP2.5 is the project's central hub: a Raspb
 
 Where the integrated data flow for the platform should be something like:
 <p align="center">
-  <img src="img_01/Field_Measurement.png" alt="NodesComplete" width="920">
+  <img src="img_01/FieldMeasurement.png" alt="NodesComplete" width="920">
 </p>
 
 More documents in the **ElBussTransTherm** repository:
