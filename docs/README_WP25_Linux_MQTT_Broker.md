@@ -1,7 +1,5 @@
 # ElBussTransTherm Fleet Backend (Central Server)
 
-[Return to main](../README.md)
-
 Central hub for the ElBussTransTherm project (KTH PhD research on thermal
 comfort and energy consumption in electric urban buses). While each bus has
 its own Raspberry Pi doing local sensor aggregation and storage, this stack
@@ -155,6 +153,16 @@ below.)
   sudo usermod -aG docker "$USER"   # log out/in for this to take effect
   ```
 
+### Ports to open on the host firewall / cloud security group
+
+| Port | Protocol | Always needed? | Purpose |
+|---|---|---|---|
+| `8883` | TCP | **Yes** | MQTT+TLS — every bus's Pi dials this over the internet. |
+| `8000` | TCP | Only if accessing the dashboard directly (no reverse proxy) | Plain HTTP dashboard/API. Fine for a LAN/VPN-only deployment; avoid leaving this open on a public interface long-term. |
+| `80`, `443` | TCP | Only if using the optional Caddy overlay (public HTTPS, see below) | `80` is needed for the Let's Encrypt HTTP challenge/renewal, not just redirects. |
+| `1883` | TCP | **No — dev/testing only** | Plain MQTT, no TLS. Never open this on a public-facing firewall; see "Testing without TLS first" below. |
+| `5432` | TCP | No | Postgres is bound to `127.0.0.1` in `docker-compose.yml` already — nothing to open, it isn't reachable from outside the host at all. |
+
 ## Quick start (fresh machine)
 
 ### 1. Copy this directory over and generate the TLS certificate
@@ -169,7 +177,30 @@ server cert's SAN must include every hostname any client will use to
 reach it** — that means both the Docker Compose service name (`mosquitto`,
 used by the internal `ingestor`/`api` containers) *and* whatever address
 the buses will actually dial (a LAN IP for testing, a public IP or domain
-once you have one):
+once you have one). `generate_certs.sh` does exactly this — it always
+includes `mosquitto`/`localhost`/`127.0.0.1`, plus whatever you pass it:
+
+```bash
+chmod +x generate_certs.sh
+./generate_certs.sh ./mosquitto/certs 3650 IP:203.0.113.10
+# ^ replace 203.0.113.10 with this host's real reachable IP; add a
+#   DNS:your-domain.com entry too (or instead) once you have one. Don't
+#   have either yet? Run it with no extra args -- see "Testing without
+#   TLS first" below for a path that doesn't need a reachable address yet.
+
+# Mosquitto in the container runs as uid/gid 1883, not root -- the config
+# and cert files must be readable (and, for dynamic-security.json,
+# writable) by that exact uid or the broker fails to start.
+sudo chown -R 1883:1883 mosquitto/certs mosquitto/config 2>/dev/null || true
+```
+
+Re-run `generate_certs.sh` later (e.g. once you have a public IP/domain
+you didn't have yet) — it reuses the existing CA rather than replacing it,
+so buses that already trust it don't need a new `ca.crt`; only the server
+cert is regenerated with the added SAN entries.
+
+<details>
+<summary>Prefer doing it by hand instead of the script? (equivalent, more manual)</summary>
 
 ```bash
 mkdir -p mosquitto/certs && cd mosquitto/certs
@@ -191,15 +222,16 @@ openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial \
   -out server.crt -days 825 -sha256 -extfile server_ext.cnf
 rm server.csr server_ext.cnf
 
-# Mosquitto in the container runs as uid/gid 1883, not root -- the config
-# and cert files must be readable (and, for dynamic-security.json,
-# writable) by that exact uid or the broker fails to start.
 cd ..
 sudo chown -R 1883:1883 certs config 2>/dev/null || true
 ```
+</details>
 
 You'll need `mosquitto/certs/ca.crt` again later, on every bus's Pi (see
 [Onboarding a new bus](#onboarding-a-new-bus)).
+
+**Don't have a reachable IP or domain yet?** You can still bring the whole
+stack up and test locally — see the next section.
 
 ### 2. Bootstrap the dynamic-security config file
 
@@ -259,6 +291,60 @@ All of this is idempotent — safe to see happen again on every restart.
 Log in at `http://<this-host>:8000/login` with `BOOTSTRAP_ADMIN_USERNAME`
 / `BOOTSTRAP_ADMIN_PASSWORD` and change that password from `/account` right
 away — it's the same value that's sitting in your `.env`.
+
+## Testing without TLS first (optional)
+
+You don't need certificates, a reachable IP, or a domain to bring the
+stack up and try it end to end on one machine. `mosquitto.conf` already
+runs a second, plain listener on `1883` alongside the TLS one on `8883` —
+it's just not published to the host by default. To use it:
+
+1. Uncomment the `- "1883:1883"` line under the `mosquitto` service in
+   `docker-compose.yml`.
+2. `docker compose up -d mosquitto` to apply it.
+3. Point a test publisher/forwarder at `<this-host>:1883` with no TLS/CA
+   cert config at all.
+
+**Never leave `1883` open on a host reachable from the public internet** —
+it has no encryption and no certificate-based trust, only the
+dynamic-security username/password (sent in the clear). Re-comment that
+line (or firewall the port off) once you move buses to `8883`. Real buses
+in the field should always use `8883`.
+
+## Exposing the dashboard publicly (optional)
+
+By default the dashboard/API is plain `http://<host>:8000` — fine over a
+LAN, SSH tunnel, or VPN, but browsers will warn about "not secure" and
+`COOKIE_SECURE` has to stay `false` if you expose it like this. Once you
+have a domain pointed at this host, an optional `docker-compose.proxy.yml`
+overlay adds [Caddy](https://caddyserver.com/) as a reverse proxy with
+automatic, self-renewing HTTPS (Let's Encrypt) — no manual certificate
+handling, unlike the MQTT cert above.
+
+1. Point your domain's DNS `A` record at this host's public IP.
+2. In `.env`, set `PUBLIC_DOMAIN` (e.g. `fleet.example.com`) and
+   `ACME_EMAIL` (Let's Encrypt sends renewal-failure notices here).
+3. Open ports `80` and `443` on the host firewall / cloud security group
+   (`80` is needed for the ACME HTTP challenge, not just redirects).
+4. Bring the overlay up:
+   ```bash
+   docker compose -f docker-compose.yml -f docker-compose.proxy.yml up -d
+   ```
+5. Set `COOKIE_SECURE=true` in `.env`, then
+   `docker compose up -d --build api` to apply it — the session cookie is
+   silently dropped by the browser over plain HTTP, so only flip this
+   *after* HTTPS is actually working end to end.
+6. Visit `https://<your-domain>/login`. Certificate issuance happens
+   automatically on Caddy's first request for the domain; check
+   `docker compose logs caddy` if it doesn't come up within a minute or
+   two (usually a DNS or port-80 reachability problem).
+
+Port `8000` stays published on the host either way — that's fine, it's
+only reachable from where you've allowed it at the firewall level; Caddy
+talks to `api` over the internal Docker network regardless. You can close
+`8000` off from the public internet at the firewall once the proxy is
+confirmed working, or leave it open for direct LAN access alongside the
+public HTTPS URL.
 
 ## Managing the fleet
 
@@ -422,6 +508,33 @@ to authenticate immediately.
   over HTTP, so login appeared to "succeed" (200/303) while nothing after
   it worked. Made configurable via `COOKIE_SECURE` (default `false`);
   flip it once a reverse proxy terminates TLS here.
+- **`generate_certs.sh`'s final directory listing silently failed on a
+  relative `cert_dir`.** The script `cd`s into `cert_dir` to generate the
+  cert files there, then originally did `ls -l "$cert_dir"` again at the
+  end — but after the `cd`, a relative path like `./mosquitto/certs` no
+  longer points at the same place, so that last line looked for a
+  nonexistent nested directory and the script exited non-zero even though
+  every cert had already been created correctly. Fixed by resolving
+  `cert_dir` to an absolute path (`cd "$cert_dir" && pwd`) before using it
+  again. Verified with the script called both with a relative path and an
+  absolute one, and called twice in a row (confirming the CA gets reused,
+  not regenerated, on the second call).
+
+## Stopping the stack (non-destructive)
+
+```bash
+sudo docker compose stop      # stops all 4 containers, keeps them (and all data) around
+sudo docker compose up -d     # brings them back up again, nothing lost
+```
+
+or, to also remove the containers/network (still keeps all volumes —
+DB contents, mosquitto persistence, everything under `mosquitto/` and
+`.env` on the host filesystem are untouched either way):
+
+```bash
+sudo docker compose down      # NO -v here -- see below for what that does
+sudo docker compose up -d --build   # recreates containers, same data as before
+```
 
 ## Resetting everything (destructive)
 
@@ -439,3 +552,40 @@ above.
 Every service has `restart: unless-stopped` and the Docker daemon itself
 starts on boot once enabled (`sudo systemctl enable docker`) — no separate
 systemd unit is needed for the stack to survive a reboot or power loss.
+
+## Backups
+
+`backup_mosquitto.sh` tars up the mosquitto config/certs (bind mounts) and
+the `mosquitto_data`/`mosquitto_log` volumes (dynamic-security state,
+persisted sessions, retained messages) into timestamped folders. The
+TimescaleDB data isn't covered by this script — back up
+`timescaledb_data` separately (e.g. `pg_dump`/`pg_basebackup`) if you need
+point-in-time recovery of `fleet_events`, not just the broker state.
+
+```bash
+nano backup_mosquitto.sh   # edit the CONTAINER/BASE_DIR/*_VOLUME/BACKUP_DIR
+                            # placeholders at the top for this host's paths
+chmod +x backup_mosquitto.sh
+./backup_mosquitto.sh      # run once by hand to confirm it works end to end
+```
+
+Then schedule it, e.g. nightly at 2am:
+
+```bash
+crontab -e
+# add:
+0 2 * * * /full/path/to/backup_mosquitto.sh >> /full/path/to/backups/backup.log 2>&1
+```
+
+## Before pushing this to a public repo
+
+- [ ] `.env` is in `.gitignore` and does **not** show up in `git status`.
+- [ ] No real `.key`/`.crt`/`.pem` file is tracked (`.gitignore` already
+      excludes `mosquitto/certs/*.key`/`*.crt`/`*.pem`/`*.csr`, keeping
+      only `.gitkeep`) — double-check with `git status` after generating
+      certs, not just before.
+- [ ] `mosquitto/config/dynamic-security.json` (real users/roles/ACLs,
+      distinct from the committed `.example` file) isn't tracked either.
+- [ ] `git log --all --full-history -- "*.env"` finds nothing — a secret
+      committed once and later deleted is still in history.
+- [ ] `gitleaks detect --source . -v` run once before the first push.
