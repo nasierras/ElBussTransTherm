@@ -57,22 +57,39 @@ Bus N Raspberry Pi  ──┘              │ fleet/{vehicle_id}/unified/combin
 - **api** — FastAPI + Uvicorn, serving both a REST API and a server-rendered
   web dashboard from the same process (no separate frontend build, no
   CORS). `admin`/`user` roles, bus CRUD, user CRUD, bus↔user assignment,
-  password management, a `GET /events` endpoint scoped to the caller's
-  assigned buses (or everything, for admins), and CSV export.
+  password management, a `GET /api/v1/events` endpoint scoped to the
+  caller's assigned buses (or everything, for admins), and CSV export.
 
 ## Web dashboard
 
 Open `http://<this-host>:8000/login` in a browser. Pages:
 
-- **`/dashboard`** — the events table, filterable by bus and date range.
-  Every payload field is flattened into its own column (e.g.
-  `bus_environment.wp21i.wp211_front.temperature_c`) rather than shown as
-  raw JSON — the column set adjusts to whatever fields are present in the
-  filtered rows, so the table scrolls horizontally when there are many. A
-  **Download CSV** button exports the current filter (bus + date range) as
-  a file, with the same flattened columns; a loading overlay covers the
-  page while the table refreshes or a file is being generated, so it's
-  never ambiguous whether something is still working.
+- **`/dashboard`** — the full dashboard (`dashboard.html`), a single-page
+  app with a sidebar switching between views (no separate frontend build —
+  it's plain JS fetching from this API). Every view is driven by real
+  `fleet_events` rows for the bus picked in the header dropdown, nothing
+  fabricated:
+  - **Dashboard** (default view) — KPI cards, an interactive **Bus
+    Overview** sensor map (positions editable via drag-and-drop, "Edit
+    positions" button, persisted per-browser), a multi-series **Time
+    Series** chart (each variable normalized 0–100% against its own
+    typical range so mixed units stay comparable, real value/unit on
+    hover), Recent Readings, and a compact **Thermal Dummy – Live State**
+    widget.
+  - **Events** — the flattened events table (every payload field becomes
+    its own column, e.g. `bus_environment.wp21i.wp211_front.c1_temp_C_head_standing`)
+    with bus/date-range filters and a **Download CSV** button.
+  - **Thermal Dummy** (full page) — three tabs: Thermal Comfort (PMV/PPD,
+    ASHRAE 55/ISO 7730, plus per-zone Globe Temp.), Surface Temperatures,
+    and Heater Output. The payload can carry more than one thermal dummy
+    (`thermal_dummies.thermal_dummy_wp26{N}`, each with its own `active`
+    flag) — a selector picks which one to view; inactive ones are shown
+    disabled in the dropdown rather than displaying stale data.
+  - **Live Map** — real GPS trail from `wp24i.lat`/`lon` on a Leaflet map,
+    plus live weather at the bus's position (Open-Meteo, no API key).
+  - **Graphs** — histogram, XY scatter, a granular (per-sensor, not
+    averaged) time series, and a Sankey diagram of real energy flows from
+    `wp25i`. Every chart has a PNG download and an enlarge-in-modal button.
 - **`/account`** — every logged-in user (`admin` or `user`) can change
   their *own* password here (their current password is required).
 - **`/admin`** — **`admin` role only**: create/delete users, reset *any*
@@ -84,25 +101,29 @@ Open `http://<this-host>:8000/login` in a browser. Pages:
 Both roles: an `admin` is a "superadmin" in the sense the project asked
 for (can manage every user and bus); there is no separate third tier.
 
-**Branding placeholders**: `app/templates/base.html` reserves a logo slot
-in the top navigation bar for the KTH logo, and `app/templates/login.html`
-reserves one above the login form for the project's own logo. Both are
-empty by design (`onerror` hides the broken-image icon if the file isn't
-there yet) — drop the real files in as
-`api/app/static/kth-logo.svg` and `api/app/static/project-logo.svg`
-(rebuild with `docker compose up -d --build api` afterward; static assets
-are baked into the image, not bind-mounted) and they'll appear with no
-other changes. Colors already match KTH's official palette (intra.kth.se
-graphic profile): KTH Blue `#004791`, Navy `#000061`, Sky Blue `#6298D2`,
-Light Blue `#DEF0FF`, Sand `#EBE5E0`.
+**Branding**: KTH and project logos are already in place at
+`api/app/static/kth_logo.png` and `api/app/static/ElBussTransTherm_logo.png`
+(favicon + header/login), referenced from `base.html`, `login.html`, and
+`dashboard.html`. To swap either image, replace that file and rebuild
+(`docker compose up -d --build api` — static assets are baked into the
+image, not bind-mounted). Colors match KTH's official palette
+(intra.kth.se graphic profile): KTH Blue `#004791`/`#004B87`, Navy
+`#000061`, Sky Blue `#6298D2`, Light Blue `#DEF0FF`, Sand `#EBE5E0`.
+
+**API**: every JSON endpoint lives under `/api/v1/` (e.g.
+`http://<this-host>:8000/api/v1/buses`) — `/healthz` is the one
+exception, kept unprefixed/unversioned since it's an ops endpoint, not
+part of the API surface. Interactive Swagger docs are at
+`http://<this-host>:8000/swagger/index.html` (the raw OpenAPI schema
+stays at the FastAPI default, `/openapi.json`).
 
 **Auth**: the dashboard uses an `HttpOnly`, `SameSite=Lax` session cookie
 (2h, `WEB_SESSION_EXPIRE_MINUTES`) set on `/login`, separate from the
 short-lived (20 min) bearer token Swagger/API clients get from
-`/auth/token` — both are accepted by every endpoint, so scripts and the
-UI can be used interchangeably without stepping on each other. State-
-changing requests (create/delete user or bus, password changes) are
-checked against `Origin`/`Referer` when cookie-authenticated (CSRF
+`/api/v1/auth/token` — both are accepted by every endpoint, so scripts
+and the UI can be used interchangeably without stepping on each other.
+State-changing requests (create/delete user or bus, password changes)
+are checked against `Origin`/`Referer` when cookie-authenticated (CSRF
 defense) — this check is skipped entirely for `Authorization: Bearer`
 requests, so it never affects Swagger or scripts.
 
@@ -272,6 +293,13 @@ Also present, with sane defaults you usually don't need to touch:
 behind TLS**; a `Secure` cookie is silently never sent by the browser over
 plain HTTP, which breaks dashboard login with no visible error).
 
+**Get `DB_PASSWORD` right now, before step 4** — it only gets *used* to
+create the database role on the very first startup; editing it afterward
+doesn't update anything and leads to a confusing `password authentication
+failed for user "fleetuser"` error (see
+[Problems already solved](#problems-already-solved-kept-here-for-reference)
+for the fix if it's too late).
+
 ### 4. Bring it up
 
 ```bash
@@ -355,7 +383,7 @@ examples show the API path.
 Log in as admin and grab a token:
 
 ```bash
-TOKEN=$(curl -s -X POST http://localhost:8000/auth/token \
+TOKEN=$(curl -s -X POST http://localhost:8000/api/v1/auth/token \
   -d "username=admin&password=$BOOTSTRAP_ADMIN_PASSWORD" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
@@ -365,7 +393,7 @@ TOKEN=$(curl -s -X POST http://localhost:8000/auth/token \
 dynamic-security in the same request):
 
 ```bash
-curl -s -X POST http://localhost:8000/buses -H "Authorization: Bearer $TOKEN" \
+curl -s -X POST http://localhost:8000/api/v1/buses -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"vehicle_id": "BUS_2034", "display_name": "Bus 2034 test line"}'
 # => {"id":1,"vehicle_id":"BUS_2034",...,"mqtt_username":"BUS_2034","mqtt_password":"..."}
@@ -375,19 +403,19 @@ curl -s -X POST http://localhost:8000/buses -H "Authorization: Bearer $TOKEN" \
 bus:
 
 ```bash
-curl -s -X POST http://localhost:8000/users -H "Authorization: Bearer $TOKEN" \
+curl -s -X POST http://localhost:8000/api/v1/users -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"username": "researcher1", "password": "...", "role": "user"}'
 # => {"id": 2, ...}
 
-curl -s -X POST http://localhost:8000/buses/1/assignments/2 -H "Authorization: Bearer $TOKEN"
+curl -s -X POST http://localhost:8000/api/v1/buses/1/assignments/2 -H "Authorization: Bearer $TOKEN"
 ```
 
 **Query events** (as that researcher, once they've logged in and gotten
 their own token):
 
 ```bash
-curl -s "http://localhost:8000/events?bus_id=1&limit=50" -H "Authorization: Bearer $USER_TOKEN"
+curl -s "http://localhost:8000/api/v1/events?bus_id=1&limit=50" -H "Authorization: Bearer $USER_TOKEN"
 ```
 
 `from`/`to` (ISO 8601) narrow the time range; default is the last 24h.
@@ -396,7 +424,7 @@ Asking for a bus not assigned to you returns `403`.
 **Export events as CSV** (same scoping/filters as above):
 
 ```bash
-curl -s "http://localhost:8000/events/export?bus_id=1&format=csv" \
+curl -s "http://localhost:8000/api/v1/events/export?bus_id=1&format=csv" \
   -H "Authorization: Bearer $USER_TOKEN" -o events.csv
 ```
 
@@ -407,22 +435,44 @@ directly. Exports are capped at `EVENTS_EXPORT_MAX_LIMIT` rows (default
 
 **Password management**:
 - Any user changes their own password from `/account`, or
-  `PATCH /users/me/password` with `{current_password, new_password}`.
+  `PATCH /api/v1/users/me/password` with `{current_password, new_password}`.
 - An admin resets *anyone's* password from `/admin`, or
-  `PUT /admin/users/{id}/password` with `{new_password}` (no old password
-  needed).
+  `PUT /api/v1/admin/users/{id}/password` with `{new_password}` (no old
+  password needed).
 - Either action immediately invalidates that user's existing sessions —
   a token/cookie issued before the change stops working, so a compromised
   account can actually be locked out, not just have its password quietly
   changed while an attacker's session stays live.
 
-Removing a bus (`DELETE /buses/{id}`) also deletes its MQTT credentials
-via dynamic-security in the same call — that bus's Pi will start failing
-to authenticate immediately.
+Removing a bus (`DELETE /api/v1/buses/{id}`) also deletes its MQTT
+credentials via dynamic-security in the same call — that bus's Pi will
+start failing to authenticate immediately.
+
+## Test data scripts (BUS_2038)
+
+`scripts/` has three small utilities for exercising the dashboard/API
+against realistic data without waiting for a real bus, all against
+`BUS_2038` specifically (register it first via `/admin` or
+`POST /api/v1/buses` if it doesn't already exist on this stack):
+
+```bash
+python3 scripts/populate_bus2038.py      # writes scripts/bus2038_seed.sql (24h, 15-min interval)
+./scripts/load_bus2038.sh                # loads that file into fleet_events
+./scripts/read_bus2038.sh                # prints row count/time range + a few sample fields
+./scripts/clear_bus2038.sh                # deletes all BUS_2038 rows (only that bus's events)
+```
+
+`populate_bus2038.py` matches the current `WP2_payload_schema.json` --
+three-axis globe temp, the `wp233_aux` zone, and multiple
+`thermal_dummies` (mirrors the schema's own example: dummies 1 and 3
+active, dummy 2 inactive) so the dashboard's dummy selector has real
+active/inactive data to switch between. Run it again to regenerate with
+fresh random values; it always overwrites `scripts/bus2038_seed.sql`
+rather than appending.
 
 ## Onboarding a new bus
 
-1. `POST /buses` (or the "Create bus" form on `/admin`) — note the
+1. `POST /api/v1/buses` (or the "Create bus" form on `/admin`) — note the
    returned `mqtt_username` / `mqtt_password`.
 2. Copy `mosquitto/certs/ca.crt` from this machine to that bus's Pi, e.g.
    into `~/wp2-pi-stack-docker/forwarder/certs/ca.crt`.
@@ -500,7 +550,9 @@ to authenticate immediately.
   Starlette matches routes in registration order, the JSON route (added
   first) always won, so a plain browser visit to `/events` returned `422`
   instead of the page. Fixed by moving the page to `/dashboard` and
-  leaving `/events` as the (unchanged) JSON API.
+  leaving `/events` as the (unchanged) JSON API — that JSON route now
+  lives under `/api/v1/events`, but the page-vs-API path collision this
+  avoids is the same regardless of prefix.
 - **A `Secure` cookie on a plain-HTTP API breaks login with no error at
   all.** The session cookie was originally hardcoded `Secure=True`
   (correct once TLS is in front of this API) — but this API is plain HTTP
@@ -519,8 +571,34 @@ to authenticate immediately.
   again. Verified with the script called both with a relative path and an
   absolute one, and called twice in a row (confirming the CA gets reused,
   not regenerated, on the second call).
-
-## Stopping the stack (non-destructive)
+- **Editing `DB_PASSWORD` in `.env` *after* the first `docker compose up`
+  does nothing — and breaks the API with a confusing error.**
+  `timescaledb/init/01-init-fleet-schema.sh` only runs once, the very
+  first time the `timescaledb_data` volume is empty; that's also the only
+  time the `fleetuser` Postgres role gets created, with whatever password
+  was in `.env` *at that moment*. Change `DB_PASSWORD` afterward (or just
+  get it wrong on the first attempt) and the role keeps its old password
+  forever, while `api`/`ingestor` start using the new one from `.env` —
+  producing `psycopg2.OperationalError: ... password authentication
+  failed for user "fleetuser"` in `docker compose logs api`, which gives
+  no hint that the fix is about the *volume*, not `.env` itself. Fix:
+  either drop the volume and let it re-init
+  (`docker compose down && docker volume rm <project>_timescaledb_data && docker compose up -d --build`,
+  fine before there's real data), or update the role in place if there is
+  (`docker compose exec timescaledb psql -U postgres -d fleetdata -c "ALTER ROLE fleetuser WITH PASSWORD '<value from .env>';"`
+  then `docker compose restart api ingestor`). Get `.env` right *before*
+  the first `up`, or expect to need one of these two fixes.
+- **`addClientRole` on a client that already has that role doesn't fail
+  with an "already exists" message like every other idempotent dynsec
+  command here — it fails with a bare `"Internal error"`.** The
+  `bootstrap_roles_and_ingestor()` idempotency check (`_ignore_if_exists`,
+  which only swallows errors containing "already exists") couldn't
+  recognize this, so every API restart logged a spurious
+  `[API] WARNING: dynsec bootstrap failed: Internal error` even though
+  nothing was actually wrong. Confirmed directly against a live broker:
+  `getClient` always returns the client's current `roles` in its
+  response, so the fix checks that first (`_client_has_role()`) instead
+  of trying to add the role and hoping the error message matches.
 
 ```bash
 sudo docker compose stop      # stops all 4 containers, keeps them (and all data) around
