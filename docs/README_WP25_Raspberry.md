@@ -343,11 +343,11 @@ shape, not the per-node MQTT wire format).
 | Topic | WP | Payload shape |
 |---|---|---|
 | `wp211_front`, `wp212_middle`, `wp213_rear` | WP2.1.i | flat: `{c1_temp_C_head_standing, c2_temp_C_head_seated, c3_temp_C_abdomen_seated, c4_temp_C_ankle_feet, k1_temp_C_control}` |
-| `wp221_front`, `wp222_right`, `wp223_left` | WP2.2.i | flat: `{a1_iav_x_m_per_s, a1_iav_y_m_per_s, a2_co2_ppm, a2_temp_C, a2_RH_percent, b2_pm001_mum, b2_pm025_mum, b2_pm040_mum, b2_pm100_mum, a3_solar_irradiance_w_per_m2}` |
+| `wp221_front`, `wp222_right`, `wp223_left` | WP2.2.i | flat: `{a1_iav_x_m_per_s, a1_iav_y_m_per_s, a1_iav_z_m_per_s, a2_co2_ppm, a2_temp_C, a2_RH_percent, b2_pm001_mum, b2_pm025_mum, b2_pm040_mum, b2_pm100_mum, a3_solar_irradiance_w_per_m2}` |
 | `wp231_front`, `wp232_middle`, `wp233_rear` | WP2.3.i | flat: `{b1_RH_percent, d1_globe_temp_x_C, d1_globe_temp_y_C, d1_globe_temp_z_C, b2_open_door_state}` |
 | `wp233_aux` | WP2.3.i (aux) | flat: same as above but **`b2_ignition_state` instead of `b2_open_door_state`** -- same field type (boolean), different sensed condition on this node |
 | `thermal_dummy_1`, `thermal_dummy_2`, `thermal_dummy_3` | WP2.6.i | `{"thermal_dummy": {"surface": {head, neck, torso, abdomen, arms, legs, auxiliary}}}` -- 7 nested body-region objects, see `WP2_payload_schema.json`'s `thermal_dummies.thermal_dummy_wp26N.surface` for exact field names per region |
-| `wp2tm_1`, `wp2tm_2`, `wp2tm_3` | WP2.TM | `{"internal_wp2tm": {...32 flat fields...}}` -- 16 body zones, each a `temp_*` float + its own `on_status_pad_*` boolean |
+| `wp2tm_1`, `wp2tm_2`, `wp2tm_3` | WP2.TM | `{"internal_wp2tm": {...32 flat fields...}}` -- 16 body zones, each a `temp_*` float + its own `pwm_status_pad_*` number (actuator PWM level, so actuator power can be computed downstream -- **not** a plain on/off flag; this replaced the old boolean `on_status_pad_*` field) |
 
 **Important for firmware:** do **not** publish an `"active"` field on the
 `thermal_dummy_N` topics. Whether a dummy counts as active is computed
@@ -379,10 +379,16 @@ What it lets you do:
   -- one card per node, "Send" publishes just that node, "Send all enabled
   sensor sections" publishes everything at once.
 - **Simulate all 3 thermal dummies and their 3 paired internal WP2.TM
-  manikins** -- 6 cards total, each always sendable (there's no
-  enable/disable toggle in this UI -- "active" is computed by
-  `aggregator.py` from message recency, see the MQTT topics table above,
-  so simply not sending to a dummy's card is what keeps it inactive).
+  manikins** -- 6 cards total, each always sendable ("active" is computed
+  by `aggregator.py` from message recency, see the MQTT topics table
+  above, so a single "Send" click only counts as active for
+  `THERMAL_DUMMY_ACTIVE_TIMEOUT_SEC` (10s) before timing back out). Each
+  thermal dummy card also has an **"Auto-send every 5s" checkbox** --
+  check it to keep resending that card's current values on a timer, so it
+  reads as continuously `active` for as long as it stays checked, without
+  needing to keep clicking "Send" by hand. Unchecking it (or closing the
+  page) just stops the timer; the dummy naturally times back out to
+  `active: false` within 10s, same as a real manikin going quiet.
 - **Inject dummy energy/CAN data** (`wp25i`) via `bus/test/can_override` --
   useful since there's no DBC file yet (see Step 1.7): "Set override"
   overrides `wp25i` with whatever values you type, tagged
@@ -429,7 +435,7 @@ done
 for node in wp221_front wp222_right wp223_left; do
   curl -s -X POST $EMULATOR/publish -H "Content-Type: application/json" -d '{
     "topic": "bus/env/'"$node"'",
-    "payload": {"a1_iav_x_m_per_s": 1.8, "a1_iav_y_m_per_s": 2.8, "a2_co2_ppm": 670, "a2_temp_C": 12.5, "a2_RH_percent": 65.8, "b2_pm001_mum": 30.0, "b2_pm025_mum": 50.0, "b2_pm040_mum": 75.0, "b2_pm100_mum": 120.0, "a3_solar_irradiance_w_per_m2": 810.0}
+    "payload": {"a1_iav_x_m_per_s": 1.8, "a1_iav_y_m_per_s": 2.8, "a1_iav_z_m_per_s": 3.8, "a2_co2_ppm": 670, "a2_temp_C": 12.5, "a2_RH_percent": 65.8, "b2_pm001_mum": 30.0, "b2_pm025_mum": 50.0, "b2_pm040_mum": 75.0, "b2_pm100_mum": 120.0, "a3_solar_irradiance_w_per_m2": 810.0}
   }'
 done
 
@@ -461,7 +467,7 @@ for n in 1 2 3; do
   }'
   curl -s -X POST $EMULATOR/publish -H "Content-Type: application/json" -d '{
     "topic": "bus/env/wp2tm_'"$n"'",
-    "payload": {"internal_wp2tm": {"temp_head": 35.8, "on_status_pad_head": true, "temp_chest_left": 35.8, "on_status_pad_chest_left": true, "temp_chest_right": 35.8, "on_status_pad_chest_right": true, "temp_abdomen": 35.8, "on_status_pad_abdomen": true, "temp_tight_left": 35.8, "on_status_pad_tight_left": true, "temp_tight_right": 35.8, "on_status_pad_tight_right": true, "temp_upper_left_arm": 35.8, "on_status_pad_upper_left_arm": true, "temp_upper_right_arm": 35.8, "on_status_pad_upper_right_arm": true, "temp_lower_left_arm": 35.8, "on_status_pad_lower_left_arm": true, "temp_lower_right_arm": 35.8, "on_status_pad_lower_right_arm": true, "temp_left_hand": 35.8, "on_status_pad_left_hand": true, "temp_right_hand": 35.8, "on_status_pad_right_hand": true, "temp_lower_left_leg": 35.8, "on_status_pad_lower_left_leg": true, "temp_lower_right_leg": 35.8, "on_status_pad_lower_right_leg": true, "temp_left_foot": 35.8, "on_status_pad_left_foot": true, "temp_right_foot": 35.8, "on_status_pad_right_foot": true}}
+    "payload": {"internal_wp2tm": {"temp_head": 35.8, "pwm_status_pad_head": 65, "temp_chest_left": 35.8, "pwm_status_pad_chest_left": 65, "temp_chest_right": 35.8, "pwm_status_pad_chest_right": 65, "temp_abdomen": 35.8, "pwm_status_pad_abdomen": 65, "temp_tight_left": 35.8, "pwm_status_pad_tight_left": 65, "temp_tight_right": 35.8, "pwm_status_pad_tight_right": 65, "temp_upper_left_arm": 35.8, "pwm_status_pad_upper_left_arm": 65, "temp_upper_right_arm": 35.8, "pwm_status_pad_upper_right_arm": 65, "temp_lower_left_arm": 35.8, "pwm_status_pad_lower_left_arm": 65, "temp_lower_right_arm": 35.8, "pwm_status_pad_lower_right_arm": 65, "temp_left_hand": 35.8, "pwm_status_pad_left_hand": 65, "temp_right_hand": 35.8, "pwm_status_pad_right_hand": 65, "temp_lower_left_leg": 35.8, "pwm_status_pad_lower_left_leg": 65, "temp_lower_right_leg": 35.8, "pwm_status_pad_lower_right_leg": 65, "temp_left_foot": 35.8, "pwm_status_pad_left_foot": 65, "temp_right_foot": 35.8, "pwm_status_pad_right_foot": 65}}
   }'
 done
 
