@@ -94,7 +94,7 @@ The Onboard Voting System (OVS) is designed to collect real-time passenger feedb
   <img src="img_01/WP3OVS.png" alt="WP3OVS" width="860">
 </p>
 
-The unit is built around a Waveshare ESP32-C6-Zero and communicates with the onboard gateway using Zigbee (IEEE 802.15.4). The circuit includes illuminated arcade buttons, a PCF8574A I/O expander for LED control, an RGB status indicatorfor battery charging level, a MAX17048 battery fuel gauge, and a LiPo-based power supply with USB-C charging and 5V boost conversion.
+The unit is built around a Waveshare ESP32-C6-Zero and communicates with the onboard gateway using Zigbee (IEEE 802.15.4). The circuit includes illuminated arcade buttons, a PCF8574A I/O expander for LED control for possible user feedback, an RGB status indicator for battery level, a MAX17048 battery fuel gauge, and a LiPo-based power supply with USB-C charging and 5V boost conversion.
 
 
 Each vote is associated with the corresponding device and transmitted to the Raspberry Pi onboard node on-demand, where it is integrated with the EBTT data infrastructure. This allows subjective passenger feedback to be synchronized with environmental measurements, HVAC operation, and vehicle data for later thermal comfort and energy-performance analysis.
