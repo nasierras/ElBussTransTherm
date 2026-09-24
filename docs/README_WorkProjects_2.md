@@ -3,7 +3,7 @@
 
 [Return to main](../README.md)
 
-# WP1
+# WP2.1.i
 
 <table border="0" cellspacing="0" cellpadding="0" style="border: none !important; border-collapse: collapse; background: transparent;">
   <tr style="border: none !important; background: transparent;">
@@ -16,12 +16,33 @@
   </tr>
 </table>
 
-# WP2
+# WP2.2.i
 
-![WP21i](WorkProjects_2_img/WP22i.gif)
+<table border="0" cellspacing="0" cellpadding="0" style="border: none !important; border-collapse: collapse; background: transparent;">
+  <tr style="border: none !important; background: transparent;">
+    <td align="center" style="border: none !important; background: transparent; padding: 0;">
+      <img src="WorkProjects_2_img/WP22i_pcb.png" alt="WP22i_pcb" width="600">
+    </td>
+    <td align="center" style="border: none !important; background: transparent; padding: 0;">
+      <img src="WorkProjects_2_img/WP22i.gif" alt="WP22i" width="300">
+    </td>
+  </tr>
+</table>
 
+# WP2.3.i
+<table border="0" cellspacing="0" cellpadding="0" style="border: none !important; border-collapse: collapse; background: transparent;">
+  <tr style="border: none !important; background: transparent;">
+    <td align="center" style="border: none !important; background: transparent; padding: 0;">
+      <img src="WorkProjects_2_img/WP23i_pcb.png" alt="WP23i_pcb" width="600">
+    </td>
+    <td align="center" style="border: none !important; background: transparent; padding: 0;">
+      <img src="WorkProjects_2_img/WP23i.gif" alt="WP23i" width="300">
+    </td>
+  </tr>
+</table>
 ![WP21i](WorkProjects_2_img/WP23i.gif)
 
+# WP2.5.i
 ![WP21i](WorkProjects_2_img/WP25i.gif)
 
 ![WP21i](WorkProjects_2_img/WP2TMi.gif)
