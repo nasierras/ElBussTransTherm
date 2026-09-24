@@ -3,18 +3,20 @@
 
 [Return to main](../README.md)
 
-Testing of the 3Ds:
+# WP1
 
-<table>
-  <tr>
-    <td align="center">
-      <img src="WorkProjects_2_img/WP21i_pcb.png" alt="WP21i_pcb" width="400">
+<table border="0" cellspacing="0" cellpadding="0" style="border: none !important; border-collapse: collapse; background: transparent;">
+  <tr style="border: none !important; background: transparent;">
+    <td align="center" style="border: none !important; background: transparent; padding: 0;">
+      <img src="WorkProjects_2_img/WP21i_pcb.png" alt="WP21i_pcb" width="600">
     </td>
-    <td align="center">
-      <img src="WorkProjects_2_img/WP21i.gif" alt="WP21i" width="400">
+    <td align="center" style="border: none !important; background: transparent; padding: 0;">
+      <img src="WorkProjects_2_img/WP21i.gif" alt="WP21i" width="300">
     </td>
   </tr>
 </table>
+
+# WP2
 
 ![WP21i](WorkProjects_2_img/WP22i.gif)
 
