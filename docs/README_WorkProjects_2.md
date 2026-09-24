@@ -9,7 +9,9 @@ Testing of the 3Ds:
   <img src="WorkProjects_2_img/WP21i_pcb.png" alt="WP21i_pcb" width="600">
 </p>
 
-![WP21i](WorkProjects_2_img/WP21i.gif)
+<p align="center">
+  ![WP21i](WorkProjects_2_img/WP21i.gif)
+</p>
 
 ![WP21i](WorkProjects_2_img/WP22i.gif)
 
