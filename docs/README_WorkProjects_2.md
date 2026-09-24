@@ -5,13 +5,16 @@
 
 Testing of the 3Ds:
 
-<p align="center">
-  <img src="WorkProjects_2_img/WP21i_pcb.png" alt="WP21i_pcb" width="600">
-</p>
-
-<p align="center">
-  ![WP21i](WorkProjects_2_img/WP21i.gif)
-</p>
+<table>
+  <tr>
+    <td align="center">
+      <img src="WorkProjects_2_img/WP21i_pcb.png" alt="WP21i_pcb" width="400">
+    </td>
+    <td align="center">
+      <img src="WorkProjects_2_img/WP21i.gif" alt="WP21i" width="400">
+    </td>
+  </tr>
+</table>
 
 ![WP21i](WorkProjects_2_img/WP22i.gif)
 
