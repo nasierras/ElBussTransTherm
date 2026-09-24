@@ -91,7 +91,7 @@ For the first stage, the integrated data flow for the platform is intended to be
 The Onboard Voting System (OVS) is designed to collect real-time passenger feedback on thermal comfort during bus operation. Each voting unit provides five illuminated inputs corresponding to Too Cold, Too Warm, Fine, Draught, and Stuffy, allowing passengers to report their perceived cabin conditions directly.
 
 <p align="center">
-  <img src="img_01/WP3OVS.png" alt="WP3OVS" width="600">
+  <img src="img_01/WP3OVS.png" alt="WP3OVS" width="860">
 </p>
 
 The unit is built around a Waveshare ESP32-C6-Zero and communicates with the onboard gateway using Zigbee (IEEE 802.15.4). The circuit includes illuminated arcade buttons, a PCF8574A I/O expander for LED control, an RGB status indicator, a MAX17048 battery fuel gauge, and a LiPo-based power supply with USB-C charging and 5 V boost conversion.
