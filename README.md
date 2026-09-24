@@ -56,7 +56,7 @@ A 16-channel thermocouple array (multiplexed via an ADG726 into a MAX31856) capt
 All analog channels read through three ADS1115 ADCs addressed separately over I2C. An ESP32-S3 (T-ETH-Lite) samples the full array at 1Hz, checks both I2C faults and MAX31856/MAX31865 hardware fault registers independent of network state, and publishes the surface dataset as JSON over MQTT via wired Ethernet, providing body-zone resolved thermal comfort data that the dummy's own heater control (WP2.TM) uses as its feedback loop, and that the project uses to approximate passenger-level comfort conditions without the cost and complexity of a fully ISO-compliant manikin.
 
 <p align="center">
-  <img src="docs/WorkProjects_1_img/WP26_plus_2TM.png" alt="WP2TM" width="860">
+  <img src="img_01/WP26_plus_2TM.png" alt="WP2TM" width="860">
 </p>
 
 For the WP2.TMi, which is the Thermal Dummy Heater-Pad Control Node. The node drives the active heating side of the thermal dummy, maintaining its 16 body-zone pads at a target skin temperature of 34°C to emulate passenger metabolic heat output and surface temperature. Each zone has NTC10k thermistor readed through ADS1115 ADCs (addressed separately over I2C) and fed into an independent PID controller, which drives a PCA9685 PWM channel controlling that zone's heater pad via a MOSFET driver stage; a hardware fault-detection layer immediately zeroes PWM output and resets the PID's integral term if any zone's sensor reads outside physical bounds, preventing thermal runaway from a failed or disconnected sensor. 
@@ -88,9 +88,23 @@ For the first stage, the integrated data flow for the platform is intended to be
 </p>
 
 ### WP3.ovs.i: Onboard Voting System
+The Onboard Voting System (OVS) is designed to collect real-time passenger feedback on thermal comfort during bus operation. Each voting unit provides five illuminated inputs corresponding to Too Cold, Too Warm, Fine, Draught, and Stuffy, allowing passengers to report their perceived cabin conditions directly.
 
+<p align="center">
+  <img src="img_01/WP3OVS.png" alt="WP3OVS" width="600">
+</p>
+
+The unit is built around a Waveshare ESP32-C6-Zero and communicates with the onboard gateway using Zigbee (IEEE 802.15.4). The circuit includes illuminated arcade buttons, a PCF8574A I/O expander for LED control, an RGB status indicator, a MAX17048 battery fuel gauge, and a LiPo-based power supply with USB-C charging and 5 V boost conversion.
+
+
+Each vote is associated with the corresponding device and transmitted to the Raspberry Pi onboard node, where it is integrated with the EBTT data infrastructure. This allows subjective passenger feedback to be synchronized with environmental measurements, HVAC operation, and vehicle data for later thermal comfort and energy-performance analysis.
+
+
+## More Info
 More documents in the **ElBussTransTherm** repository:
 
 [See about State-of-the-Art (WP1)](./docs/README_WorkProjects_1.md)
 
 [See about WorkProjects 2 (WP2)](./docs/README_WorkProjects_2.md)
+
+[See about WorkProjects 3 (WP3)](./docs/README_WorkProjects_3.md)
