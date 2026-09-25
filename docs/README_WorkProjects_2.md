@@ -84,9 +84,3 @@
       <img src="WorkProjects_2_img/WP2TMi.gif" alt="WP2TMi" width="300">
     </td>
   </tr>
-  <tr>
-    <td>
-      <img src="WorkProjects_2_img/WP2TMi-bottom_pcb.png" alt="WP2TMi-bottom_pcb" width="600">
-    </td>
-  </tr>
-</table>
