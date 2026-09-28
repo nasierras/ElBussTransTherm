@@ -62,7 +62,7 @@
     <td>
       <img src="WorkProjects_2_img/WP26i-top_pcb.png" alt="WP26i-top_pcb" width="600">
     </td>
-    <td>
+    <td rowspan="2">
       <img src="WorkProjects_2_img/WP26i.gif" alt="WP26i" width="300">
     </td>
   </tr>
@@ -80,7 +80,13 @@
     <td>
       <img src="WorkProjects_2_img/WP2TMi-top_pcb.png" alt="WP2TMi-top_pcb" width="600">
     </td>
-    <td rowspan="2" align="center" style="border: none !important; background: #ffffff !important; padding: 0;">
+    <td rowspan="2">
       <img src="WorkProjects_2_img/WP2TMi.gif" alt="WP2TMi" width="300">
     </td>
   </tr>
+  <tr>
+    <td>
+      <img src="WorkProjects_2_img/WP2TMi-bottom_pcb.png" alt="WP2TMi-bottom_pcb" width="600">
+    </td>
+  </tr>
+</table>
